@@ -1,0 +1,38 @@
+{
+  "mcpServers": {
+    "gsc": {
+      "command": "uvx",
+      "args": ["mcp-search-console==0.3.2"],
+      "env": {
+        "GSC_OAUTH_CLIENT_SECRETS_FILE": "${GSC_OAUTH_CLIENT_SECRETS_FILE}"
+      }
+    },
+    "pagespeed": {
+      "command": "npx",
+      "args": ["-y", "pagespeed-insights-mcp@latest"],
+      "env": {
+        "GOOGLE_API_KEY": "${PAGESPEED_API_KEY}"
+      }
+    },
+    "lighthouse-local": {
+      "command": "npx",
+      "args": ["-y", "lighthouse-mcp"],
+      "disabled": true
+    },
+    "geo-check": {
+      "command": "python",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-servers/geo-check/server.py"],
+      "env": {
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "PERPLEXITY_API_KEY": "${PERPLEXITY_API_KEY}"
+      },
+      "disabled": true
+    },
+    "schema-validate": {
+      "command": "python",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-servers/schema-validate/server.py"],
+      "disabled": true
+    }
+  }
+}

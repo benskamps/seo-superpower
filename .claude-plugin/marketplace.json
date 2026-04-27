@@ -1,0 +1,17 @@
+{
+  "name": "benskamps-marketplace",
+  "owner": {
+    "name": "Benjamin Schippers",
+    "url": "https://github.com/benskamps"
+  },
+  "plugins": [
+    {
+      "name": "seo-superpower",
+      "source": ".",
+      "description": "End-to-end SEO + GEO for technical builders. Free-tier only — no DataForSEO, no $200/mo SaaS.",
+      "version": "0.1.0",
+      "category": "seo",
+      "tags": ["seo", "geo", "search-console", "lighthouse", "next.js", "astro"]
+    }
+  ]
+}

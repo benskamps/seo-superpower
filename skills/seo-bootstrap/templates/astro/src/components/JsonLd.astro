@@ -1,0 +1,47 @@
+---
+// src/components/JsonLd.astro
+// Drop into src/layouts/Layout.astro inside <head>.
+// Usage:
+//   <JsonLd
+//     name="Your Site"
+//     logo="https://example.com/logo.png"
+//     sameAs={["https://twitter.com/yoursite"]}
+//   />
+
+interface Props {
+  name: string;
+  logo?: string;
+  sameAs?: string[];
+  searchUrlTemplate?: string;
+}
+
+const { name, logo, sameAs = [], searchUrlTemplate } = Astro.props;
+const site = Astro.site?.toString().replace(/\/$/, '') ?? 'https://example.com';
+
+const organization = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name,
+  url: site,
+  ...(logo && { logo }),
+  ...(sameAs.length && { sameAs }),
+};
+
+// Note: @type is "WebSite" (capital S) — schema.org is case-sensitive.
+const website = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name,
+  url: site,
+  ...(searchUrlTemplate && {
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: { '@type': 'EntryPoint', urlTemplate: searchUrlTemplate },
+      'query-input': 'required name=search_term_string',
+    },
+  }),
+};
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(organization)} />
+<script type="application/ld+json" set:html={JSON.stringify(website)} />

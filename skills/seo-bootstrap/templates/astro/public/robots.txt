@@ -1,0 +1,20 @@
+# public/robots.txt — served as-is at /robots.txt.
+# Default-allow: open by default, deny only sensitive paths.
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /draft/
+
+# Welcome AI crawlers explicitly. To block them, change Allow: / to Disallow: /
+User-agent: GPTBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+# Replace with your canonical site URL.
+Sitemap: https://example.com/sitemap-index.xml
