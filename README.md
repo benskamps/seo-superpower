@@ -4,11 +4,14 @@
 
 A [Claude Code](https://claude.com/claude-code) plugin that turns SEO from "thing I'll learn someday" into a normal dev loop. Run `/seo`, get a PR. The terminal you already live in becomes your SEO dashboard.
 
+**For non-technical users:** the `/seo-setup` wizard walks you through everything click-by-click in 5 minutes. No prior SEO or cloud experience needed.
+
 ```bash
-/seo
+/seo-setup    # one-time, ~5 min — opens browser tabs, takes you click-by-click
+/seo          # daily — diagnoses and ships
 ```
 
-That's it. The plugin figures out your site's lifecycle phase (just shipped? indexed but stalled? mature and decaying?), runs the right diagnostic in parallel, and routes you to the right action — usually a PR.
+That's it. After setup, just type `/seo`. The plugin figures out your site's lifecycle phase (just shipped? indexed but stalled? mature and decaying?), runs the right diagnostic in parallel, and routes you to the right action — usually a PR.
 
 ---
 
@@ -48,18 +51,20 @@ More coming (see [VISION.md](VISION.md)): on-page optimization, schema markup, G
 
 These are how Claude actually *does* the work — pulling data, running scans, validating. Skills are reference docs that tell Claude *what* to do; MCPs are the hands.
 
-## Install
+## Install (5 minutes, no SEO knowledge needed)
 
 ```bash
 # In Claude Code:
 /plugin marketplace add benskamps/seo-superpower
 /plugin install seo-superpower
-
-# Then in any repo:
-/seo
+/seo-setup
 ```
 
-For MCP credential setup (GSC OAuth + PageSpeed API key), see [MCP_SETUP.md](MCP_SETUP.md). Budget: ~10 minutes one-time.
+`/seo-setup` is a guided wizard that walks you through Google Cloud + API setup **click-by-click**. It opens the right URLs, takes minimal input, and validates everything before declaring done. You don't need to know what an OAuth client is.
+
+When the wizard says ✅ — type `/seo` in any project. That's the whole product.
+
+Full install guide: [INSTALL.md](INSTALL.md). DIY/manual path: [MCP_SETUP.md](MCP_SETUP.md).
 
 ## The wedge
 

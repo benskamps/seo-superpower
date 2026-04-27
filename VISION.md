@@ -23,13 +23,15 @@
 ## v1 — shipped
 
 - Plugin scaffold (`.claude-plugin/plugin.json`, `marketplace.json`)
-- Single command: `/seo` (with optional intent argument)
+- Two commands: `/seo` (daily driver) + `/seo-setup` (5-min guided installer)
 - 3 skills: `seo-superpower` meta-router, `seo-bootstrap`, `auditing-technical-seo`
 - Migrated: `finding-underserved-keywords` from its standalone repo
 - MCP integration plan (see `MCP_SETUP.md`) for `gsc-mcp` + `lighthouse-mcp`
-- README leads with the free-tier wedge
+- Helper scripts: `scripts/check.sh` (readiness verification), `scripts/wire-credentials.sh` (env writer)
+- INSTALL.md leads with the click-by-click easy path
+- README leads with the free-tier + dead-easy-setup wedge
 
-**Goal:** a builder with no SEO knowledge can install, run `/seo`, and get a working sitemap + schema + a fix-list in 10 minutes.
+**Goal:** a non-technical builder can install, run `/seo-setup` (~5 min), then `/seo` and get a working sitemap + schema + a fix-list in another 10 minutes. Total: 15 min from zero to value.
 
 ## v2 — one month out
 
