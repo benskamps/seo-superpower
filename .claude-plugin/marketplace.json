@@ -9,7 +9,7 @@
       "name": "seo-superpower",
       "source": ".",
       "description": "End-to-end SEO + GEO for technical builders. Free-tier only — no DataForSEO, no $200/mo SaaS.",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "category": "seo",
       "tags": ["seo", "geo", "search-console", "lighthouse", "next.js", "astro"]
     }

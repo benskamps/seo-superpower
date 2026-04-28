@@ -37,10 +37,14 @@ Ask **at most one** clarifying question. If the live URL is known, skip the ques
 | "traffic is dropping" | `refreshing-stale-content` | `gsc-mcp` decay-detect |
 | "what should I write about" | `finding-underserved-keywords` | `gsc-mcp` |
 | "I just shipped, what now" | `seo-bootstrap` | — |
+| "set up GSC / verify domain" | `setting-up-seo-measurement` | — |
 | "am I set up right for Google" | `auditing-technical-seo` | `lighthouse-mcp` |
-| "ChatGPT doesn't mention us" | `optimizing-for-generative-engines` | `geo-check-mcp` |
-| "add schema" | `adding-schema-markup` | — |
-| "this page won't rank" | `optimizing-on-page` | `gsc-mcp` page-level |
+| "ChatGPT doesn't mention us" | `optimizing-for-generative-engines` | `geo-check` |
+| "add schema" / "JSON-LD" | `adding-schema-markup` | `schema-validate` |
+| "this page won't rank" | `optimizing-on-page` | `gsc-mcp`, `lighthouse-mcp` |
+| "traffic is dropping on /blog/X" | `refreshing-stale-content` | `gsc-mcp` decay-detect |
+| "polish this blog post" | `optimizing-on-page` | — |
+| "track AI citations over time" | `optimizing-for-generative-engines` | `geo-check` (track + diff) |
 
 ## Output format
 

@@ -6,19 +6,21 @@
 
 | # | Skill | Phase | Status |
 |---|---|---|---|
-| 1 | `setting-up-seo-measurement` | Initial | Planned (v2) |
-| 2 | `auditing-technical-seo` | Initial + cross-cutting | **v1** |
+| 1 | `setting-up-seo-measurement` | Initial | **v2 ✅** |
+| 2 | `auditing-technical-seo` | Initial + cross-cutting | **v1 ✅** |
 | 3 | `researching-keywords-pre-launch` | Initial | Planned (v3) |
 | 4 | `planning-topic-clusters` | Initial → Growth | Planned (v3) |
 | 5 | `analyzing-content-gaps` | Growth | Planned (v3) |
-| 6 | `optimizing-on-page` | Cross-cutting | Planned (v2) |
-| 7 | `adding-schema-markup` | Cross-cutting | Planned (v2) |
-| 8 | `optimizing-for-generative-engines` | Cross-cutting | Planned (v2) |
-| 9 | **`finding-underserved-keywords`** | Growth | **v1 (migrated)** |
-| 10 | `refreshing-stale-content` | Mature | Planned (v2) |
+| 6 | `optimizing-on-page` | Cross-cutting | **v2 ✅** |
+| 7 | `adding-schema-markup` | Cross-cutting | **v2 ✅** |
+| 8 | `optimizing-for-generative-engines` | Cross-cutting | **v2 ✅** |
+| 9 | **`finding-underserved-keywords`** | Growth | **v1 (migrated) ✅** |
+| 10 | `refreshing-stale-content` | Mature | **v2 ✅** |
 | 11 | `building-eeat-and-authority` | Growth → Mature | Planned (v3) |
 | 12 | `generating-programmatic-seo` | Growth → Mature | Planned (v3) |
-| ★ | `seo-superpower` (meta-router) | Cross-cutting | **v1** |
+| ★ | `seo-superpower` (meta-router) | Cross-cutting | **v1 ✅** |
+
+**v2 status: 5/5 planned skills shipped + `geo-check` MCP working + decay-check hook documented.**
 
 ## v1 — shipped
 
@@ -33,15 +35,15 @@
 
 **Goal:** a non-technical builder can install, run `/seo-setup` (~5 min), then `/seo` and get a working sitemap + schema + a fix-list in another 10 minutes. Total: 15 min from zero to value.
 
-## v2 — one month out
+## v2 — SHIPPED ✅
 
-- `optimizing-on-page` skill — title/meta/H/internal links per page
-- `adding-schema-markup` skill — JSON-LD generators with validation
-- `optimizing-for-generative-engines` skill — first-class GEO with citation tracking
-- `refreshing-stale-content` skill — decay detection + auto-refresh PRs
-- `setting-up-seo-measurement` skill — GSC + GA4 onboarding
-- Weekly decay-detection hook (opt-in)
-- `geo-check-mcp` — polls ChatGPT/Perplexity/Claude for citations
+- ✅ `optimizing-on-page` skill — title/meta/H/internal links per page (citation-backed)
+- ✅ `adding-schema-markup` skill — JSON-LD decision tree + validation flow
+- ✅ `optimizing-for-generative-engines` skill — first-class GEO with citation tracking
+- ✅ `refreshing-stale-content` skill — decay detection + auto-refresh PR playbook
+- ✅ `setting-up-seo-measurement` skill — GSC + GA4 + Bing + IndexNow onboarding
+- ✅ Weekly decay-detection hook (opt-in, documented at `hooks/seo-decay-check.json`)
+- ✅ `geo-check` MCP — working Python implementation, polls ChatGPT/Claude/Perplexity/Gemini, tracks citations with `geo_check` / `geo_track` / `geo_diff` tools
 
 ## v3 — quarter out
 

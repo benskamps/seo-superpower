@@ -1,0 +1,94 @@
+{
+  "$schema": "https://code.claude.com/schemas/hooks.json",
+  "_comment": "Weekly content-decay detection hook for the seo-superpower plugin. Pairs with the refreshing-stale-content skill. Reference: https://code.claude.com/docs/en/hooks",
+  "_version": "0.2.0-stub",
+  "_status": "DOCUMENTED STUB. SessionStart nudge + UserPromptSubmit manual trigger are wired; CronCreate / RemoteTrigger paths are spec-only and disabled by default. Full automation lands in v3.",
+
+  "hooks": {
+    "SessionStart": [
+      {
+        "_description": "On session start, check timestamp of last decay sweep. If >7 days old AND a GSC-verified site is configured, surface a one-line nudge in context. Does not auto-execute the sweep.",
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PROJECT_DIR}/scripts/decay-check-nudge.js",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+
+    "UserPromptSubmit": [
+      {
+        "_description": "Listen for the manual trigger phrase. When the user types '/seo refresh' or 'run decay check', append a directive to context that loads the refreshing-stale-content skill and runs the sweep workflow.",
+        "matcher": "/seo refresh|run decay check|weekly seo sweep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CLAUDE_PROJECT_DIR}/scripts/decay-check-run.js"
+          }
+        ]
+      }
+    ]
+  },
+
+  "scheduled": {
+    "_comment": "Two scheduling paths. CronCreate runs in-session (only fires while a Claude Code session is open Monday morning). RemoteTrigger is durable and fires regardless of local session state — recommended for production sites.",
+
+    "CronCreate": {
+      "_description": "In-session cron. Runs every Monday 09:00 local time. Only fires if a Claude Code session is active.",
+      "schedule": "0 9 * * 1",
+      "command": "/seo refresh",
+      "timezone": "local",
+      "enabled": false,
+      "_note": "Disabled by default. Enable per-project once gsc-mcp is verified."
+    },
+
+    "RemoteTrigger": {
+      "_description": "Durable scheduled agent. Fires Monday 09:00 UTC. Runs the decay sweep, opens PRs autonomously, posts a summary to the configured channel.",
+      "schedule": "0 9 * * 1",
+      "timezone": "UTC",
+      "agent": "seo-decay-sweep",
+      "skill": "refreshing-stale-content",
+      "config": {
+        "yoy_impression_threshold_pct": -20,
+        "min_sustained_weeks": 4,
+        "ctr_drop_threshold_pct": -25,
+        "position_drift_min_spots": 3,
+        "min_page_age_months": 6,
+        "max_prs_per_run": 5,
+        "open_prs": true,
+        "ping_indexnow_after_merge": true,
+        "indexnow_key_env": "INDEXNOW_API_KEY",
+        "summary_channel": null
+      },
+      "enabled": false,
+      "_note": "Disabled by default. v3 implementation."
+    }
+  },
+
+  "manual_commands": {
+    "/seo refresh": {
+      "description": "Run the weekly decay sweep manually. Loads refreshing-stale-content skill, queries gsc-mcp for the configured site, identifies pages exceeding the decay thresholds, and proposes a refresh queue. User confirms before any PR is opened.",
+      "skill": "refreshing-stale-content",
+      "requires": ["gsc-mcp", "GSC-verified site in .seoconfig.json"]
+    },
+    "/seo refresh <url>": {
+      "description": "Skip detection and run the per-page refresh playbook directly on <url>.",
+      "skill": "refreshing-stale-content"
+    }
+  },
+
+  "expected_behavior": {
+    "on_session_start_stale": "Single-line context nudge appears: 'SEO: decay sweep is 9 days old. Run /seo refresh.' No blocking, no auto-execution.",
+    "on_manual_trigger": "Plugin loads refreshing-stale-content skill > queries gsc-mcp for 12-month window > ranks pages by decay severity > presents top N candidates > on user confirm, opens one PR per page with copy edits, dateModified bump, and adjusted internal links > on merge, pings IndexNow.",
+    "on_scheduled_remote": "(v3) Same as manual trigger but unattended; respects max_prs_per_run cap; posts summary with PR links.",
+    "thresholds_source": "All numeric thresholds match the SKILL.md detection table. Adjust in this file, not in the skill."
+  },
+
+  "_references": [
+    "https://code.claude.com/docs/en/hooks",
+    "https://github.com/anthropics/claude-code/blob/main/plugins/plugin-dev/skills/hook-development/SKILL.md"
+  ]
+}

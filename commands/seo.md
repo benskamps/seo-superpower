@@ -10,10 +10,13 @@ If `$ARGUMENTS` is empty, run the full diagnostic flow from `seo-superpower` (li
 If `$ARGUMENTS` contains an explicit intent, skip diagnosis and route directly:
 - `audit` or `technical` → `auditing-technical-seo`
 - `bootstrap` → `seo-bootstrap`
+- `measure` or `setup` → `setting-up-seo-measurement`
 - `underserved` or `keywords` → `finding-underserved-keywords`
-- `refresh` → `refreshing-stale-content` (when available)
-- `brief` → `optimizing-on-page` content-brief mode (when available)
-- `geo-check` → `optimizing-for-generative-engines` (when available)
+- `refresh` → `refreshing-stale-content`
+- `on-page` or `polish` → `optimizing-on-page`
+- `schema` or `json-ld` → `adding-schema-markup`
+- `geo-check` or `geo` → `optimizing-for-generative-engines` (uses geo-check MCP)
+- `brief` → `optimizing-on-page` content-brief mode (when available v3)
 
 Follow the 1-call rule: at most one clarifying question. Default to running diagnostics in parallel when ambiguous. Output a routing report (what you found, what you're doing, what the user gets), then execute.
 
