@@ -8,19 +8,21 @@
 |---|---|---|---|
 | 1 | `setting-up-seo-measurement` | Initial | **v2 ✅** |
 | 2 | `auditing-technical-seo` | Initial + cross-cutting | **v1 ✅** |
-| 3 | `researching-keywords-pre-launch` | Initial | Planned (v3) |
-| 4 | `planning-topic-clusters` | Initial → Growth | Planned (v3) |
-| 5 | `analyzing-content-gaps` | Growth | Planned (v3) |
+| 3 | `researching-keywords-pre-launch` | Initial | **v3 ✅** |
+| 4 | `planning-topic-clusters` | Initial → Growth | **v3 ✅** |
+| 5 | `analyzing-content-gaps` | Growth | **v3 ✅** |
 | 6 | `optimizing-on-page` | Cross-cutting | **v2 ✅** |
 | 7 | `adding-schema-markup` | Cross-cutting | **v2 ✅** |
 | 8 | `optimizing-for-generative-engines` | Cross-cutting | **v2 ✅** |
 | 9 | **`finding-underserved-keywords`** | Growth | **v1 (migrated) ✅** |
 | 10 | `refreshing-stale-content` | Mature | **v2 ✅** |
-| 11 | `building-eeat-and-authority` | Growth → Mature | Planned (v3) |
-| 12 | `generating-programmatic-seo` | Growth → Mature | Planned (v3) |
+| 11 | `building-eeat-and-authority` | Growth → Mature | **v3 ✅** |
+| 12 | `generating-programmatic-seo` | Growth → Mature | **v3 ✅** |
 | ★ | `seo-superpower` (meta-router) | Cross-cutting | **v1 ✅** |
 
 **v2 status: 5/5 planned skills shipped + `geo-check` MCP working + decay-check hook documented.**
+
+**v3 status: 5/5 planned skills shipped + `schema-validate` MCP working. 12/12 skill registry complete.**
 
 ## v1 — shipped
 
@@ -45,15 +47,21 @@
 - ✅ Weekly decay-detection hook (opt-in, documented at `hooks/seo-decay-check.json`)
 - ✅ `geo-check` MCP — working Python implementation, polls ChatGPT/Claude/Perplexity/Gemini, tracks citations with `geo_check` / `geo_track` / `geo_diff` tools
 
-## v3 — quarter out
+## v3 — SHIPPED ✅
 
-- `building-eeat-and-authority` — author bios, brand mentions, original data
-- `generating-programmatic-seo` — template-driven page generation with quality gates
-- `analyzing-content-gaps` — competitor SERP diff
-- `planning-topic-clusters` — pillar + spoke architecture
-- `researching-keywords-pre-launch` — cold-start keyword discovery
-- Cross-site comparison
+- ✅ `building-eeat-and-authority` — author bios, brand mentions, original data, YMYL gates
+- ✅ `generating-programmatic-seo` — template-driven page generation with 4 quality gates
+- ✅ `analyzing-content-gaps` — competitor SERP diff with entity extraction
+- ✅ `planning-topic-clusters` — pillar + spoke architecture, internal-link graph
+- ✅ `researching-keywords-pre-launch` — cold-start keyword discovery (5 free signals)
+- ✅ `schema-validate` MCP — offline JSON-LD validation against schema.org via pyld + extruct, with Google rich-result eligibility checks for 9 types
+
+## What's beyond v3 (future)
+
+- Cross-site comparison (multi-site portfolios)
 - Markdown PDF reports via the `make-pdf` skill
+- Activate the `seo-decay-check` hook with real automation (CronCreate / RemoteTrigger paths)
+- Multi-language / hreflang skill
 
 ## The 5 killer features (the moat)
 

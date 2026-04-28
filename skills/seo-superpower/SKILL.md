@@ -45,6 +45,11 @@ Ask **at most one** clarifying question. If the live URL is known, skip the ques
 | "traffic is dropping on /blog/X" | `refreshing-stale-content` | `gsc-mcp` decay-detect |
 | "polish this blog post" | `optimizing-on-page` | — |
 | "track AI citations over time" | `optimizing-for-generative-engines` | `geo-check` (track + diff) |
+| "what should I write about" (no GSC yet) | `researching-keywords-pre-launch` | — |
+| "topic clusters" / "content architecture" | `planning-topic-clusters` | — |
+| "why does X outrank us" / "content gap" | `analyzing-content-gaps` | `firecrawl` (SERP scrape) |
+| "build authority" / "E-E-A-T" / "author bios" | `building-eeat-and-authority` | `schema-validate` |
+| "programmatic SEO" / "generate landing pages from data" | `generating-programmatic-seo` | `schema-validate` |
 
 ## Output format
 

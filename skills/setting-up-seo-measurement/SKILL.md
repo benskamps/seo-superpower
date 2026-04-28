@@ -52,7 +52,7 @@ When `geo-check` MCP ships (v2), it will run a monthly poll across ChatGPT, Clau
 
 - **URL-property-only verification.** Misses every subdomain. Always Domain property.
 - **Sitemap submitted before pages are indexable.** 404s and `noindex` URLs in a sitemap erode crawl trust. Audit indexability first.
-- **GA4 / analytics tracking only one of www or apex.** Cost roadtripper.ai a week of "why is traffic flat?" before we noticed half the visits weren't being recorded. Always cover both.
+- **GA4 / analytics tracking only one of www or apex.** Cost vibecrafting.ai a week of "why is traffic flat?" before we noticed half the visits weren't being recorded. Always cover both.
 - **Forgetting to enable site verification on Vercel for prod-only.** Preview deploys can swallow the verification meta tag if you used HTML-file verification. Domain-property + DNS TXT sidesteps this entirely.
 - **Confusing GSC with GA4.** GSC = how Google sees your site (impressions, queries, crawl). GA4 = how users behave after landing. You need both; they answer different questions.
 

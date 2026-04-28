@@ -31,8 +31,7 @@
     },
     "schema-validate": {
       "command": "python",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-servers/schema-validate/server.py"],
-      "disabled": true
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-servers/schema-validate/server.py"]
     }
   }
 }

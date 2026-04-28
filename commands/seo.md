@@ -12,11 +12,16 @@ If `$ARGUMENTS` contains an explicit intent, skip diagnosis and route directly:
 - `bootstrap` → `seo-bootstrap`
 - `measure` or `setup` → `setting-up-seo-measurement`
 - `underserved` or `keywords` → `finding-underserved-keywords`
+- `cold-start` or `pre-launch` → `researching-keywords-pre-launch`
+- `clusters` or `topics` → `planning-topic-clusters`
 - `refresh` → `refreshing-stale-content`
 - `on-page` or `polish` → `optimizing-on-page`
 - `schema` or `json-ld` → `adding-schema-markup`
+- `gap` or `competitor` → `analyzing-content-gaps`
+- `eeat` or `authority` → `building-eeat-and-authority`
+- `programmatic` or `scale` → `generating-programmatic-seo`
 - `geo-check` or `geo` → `optimizing-for-generative-engines` (uses geo-check MCP)
-- `brief` → `optimizing-on-page` content-brief mode (when available v3)
+- `brief` → `analyzing-content-gaps` (content brief from competitor SERP)
 
 Follow the 1-call rule: at most one clarifying question. Default to running diagnostics in parallel when ambiguous. Output a routing report (what you found, what you're doing, what the user gets), then execute.
 

@@ -63,7 +63,7 @@ This file is the enrichment artifact for the SKILL.md. Every numbered citation i
 
 ## Gaps and Estimates
 
-- **Brand-doubling in title penalty** — observed empirically (the Roadtripper trip-page bug) but no primary Google statement; treated as a rewrite-trigger heuristic.
+- **Brand-doubling in title penalty** — observed empirically (the Vibecrafting trip-page bug) but no primary Google statement; treated as a rewrite-trigger heuristic.
 - **AI-citation lift from alt text** — industry consensus, no controlled study quantifying the effect; treated as directional.
 - **Internal-link CTR lift (35%)** — single industry study [4]; treated as supportive, not authoritative.
 

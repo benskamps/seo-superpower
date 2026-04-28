@@ -33,31 +33,36 @@ Other Claude SEO tools require paid APIs (DataForSEO, $60+/mo). The SaaS giants 
 
 Or just run `/seo` with no argument. It diagnoses your phase and picks for you.
 
-## Skills included (9 total)
+## Skills included (13 total — full registry shipped)
 
 | Skill | Lifecycle phase | Triggers on |
 |---|---|---|
 | `seo-superpower` (meta-router) | Cross-cutting | Vague SEO requests |
 | `setting-up-seo-measurement` | Initial | "verify GSC", "set up Search Console", "measure SEO" |
 | `seo-bootstrap` | Initial | "set up SEO", "add sitemap", "I just shipped" |
+| `researching-keywords-pre-launch` | Initial | "what should I write about" (no GSC yet), "cold-start SEO" |
 | `auditing-technical-seo` | Initial + cross-cutting | "audit my site", "Core Web Vitals", "why isn't my site ranking" |
+| `planning-topic-clusters` | Initial → Growth | "topic clusters", "content architecture", "pillar pages" |
 | `optimizing-on-page` | Cross-cutting | "polish this page", "title and meta", "internal linking" |
 | `adding-schema-markup` | Cross-cutting | "add schema", "JSON-LD", "FAQ schema", "rich results" |
 | `optimizing-for-generative-engines` | Cross-cutting | "GEO", "ChatGPT citations", "AI Overview", "track AI search" |
+| `analyzing-content-gaps` | Growth | "why does X outrank us", "content gap", "content brief" |
 | [`finding-underserved-keywords`](https://github.com/benskamps/finding-underserved-keywords) | Growth + Mature | "GSC analysis", "striking distance keywords", impression/CTR gaps |
+| `building-eeat-and-authority` | Growth → Mature | "E-E-A-T", "author bios", "build authority", "YMYL" |
+| `generating-programmatic-seo` | Growth → Mature | "programmatic SEO", "scale content", "city pages from data" |
 | `refreshing-stale-content` | Mature | "traffic is dropping", "content decay", "refresh old post" |
 
 Plus `hooks/seo-decay-check.json` — a weekly content-decay detection hook that surfaces nudges on session start and runs on demand via `/seo refresh`.
 
-Coming in v3 (see [VISION.md](VISION.md)): topic clusters, content gap analysis, programmatic SEO, E-E-A-T authority building, pre-launch keyword research.
+The full 12-skill registry from [VISION.md](VISION.md) is shipped. Beyond v3: cross-site comparison, multi-language hreflang, decay-check automation activation.
 
 ## MCP tools bundled
 
 - **`gsc`** — pulls per-page query data from your Google Search Console (vendored from `AminForou/mcp-gsc==0.3.2`)
 - **`pagespeed`** — runs PageSpeed Insights / Lighthouse audits (vendored from `pagespeed-insights-mcp`)
 - **`geo-check`** — polls ChatGPT, Claude, Perplexity, and Gemini for citations of your domain. Built in this repo. Tools: `geo_check`, `geo_track`, `geo_diff` for baseline + delta tracking
+- **`schema-validate`** — offline JSON-LD validation against schema.org via `pyld` + `extruct`, with Google rich-result eligibility checks for 9 types (Article, Product, FAQPage, HowTo, BreadcrumbList, Organization, Recipe, Event, JobPosting). Built in this repo
 - **`lighthouse-local`** — local Lighthouse fallback when PSI quota's hit (opt-in)
-- **`schema-validate`** — offline JSON-LD validation (v2 stub)
 
 These are how Claude actually *does* the work — pulling data, running scans, validating, tracking AI citations. Skills are reference docs that tell Claude *what* to do; MCPs are the hands.
 

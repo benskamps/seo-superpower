@@ -33,7 +33,7 @@ The job: pick the right type, populate the required + key recommended fields **f
 | Step-by-step tutorial | `HowTo` | No rich result anymore [1]; still useful for LLMs |
 | Site nav / breadcrumb trail | `BreadcrumbList` | Cheap, near-universal — almost always worth adding |
 | Landing / home | `Organization` + `WebSite` | Already shipped by `seo-bootstrap` — don't duplicate |
-| Trip / itinerary / road-trip page | `TouristTrip` + `itinerary` (`ItemList` of `TouristAttraction`) | No Google rich result, but Perplexity / AI Overviews read it [5] — relevant for roadtripper.ai-style sites |
+| Trip / itinerary / road-trip page | `TouristTrip` + `itinerary` (`ItemList` of `TouristAttraction`) | No Google rich result, but Perplexity / AI Overviews read it [5] — relevant for vibecrafting.ai-style sites |
 
 ## The Flow
 

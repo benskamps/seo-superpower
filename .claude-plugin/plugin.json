@@ -1,6 +1,6 @@
 {
   "name": "seo-superpower",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "End-to-end SEO + Generative Engine Optimization (GEO) for technical builders. One command (/seo) drives the whole flow: bootstrap, audit, find underserved keywords, refresh stale content. Works on free-tier GSC + PageSpeed only — no DataForSEO, no $200/mo SaaS.",
   "author": {
     "name": "Benjamin Schippers",

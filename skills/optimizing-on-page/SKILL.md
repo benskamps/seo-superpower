@@ -43,7 +43,7 @@ The per-page workhorse. While `auditing-technical-seo` works at the site level a
 
 ## Anti-patterns / common mistakes
 
-- **Brand-doubling in title** — `Trip to Yosemite | Roadtripper | Roadtripper` (the bug we hit on Roadtripper trip pages). Brand goes once, at the end, separated by `|` or `—`.
+- **Brand-doubling in title** — `Make a Capsule Wardrobe | Vibecrafting | Vibecrafting` (a real bug we hit in the wild). Brand goes once, at the end, separated by `|` or `—`.
 - **Clickbait titles** — Google rewrites them, killing your CTR control.
 - **H1 = page title** — verbatim duplication wastes a heading slot; H1 should expand or rephrase.
 - **Keyword stuffing alt text or H2s** — alt becomes spam signal; H2s lose snippet eligibility.
