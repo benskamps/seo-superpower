@@ -31,6 +31,53 @@ Technical SEO is the foundation. Content strategy, keyword work, and link buildi
 
 **4. Open ONE PR** with the highest-confidence, low-risk fixes only: adding viewport meta, adding missing meta descriptions, adding `Sitemap:` line to `robots.txt`, adding explicit GPTBot/ClaudeBot allow-or-block stanza, adding root `Organization` JSON-LD. Leave architectural calls (CSR → SSR migration, image pipeline rework) for human decision in the audit doc.
 
+## No-MCP fallback
+
+When `lighthouse-mcp` and `gsc-mcp` aren't configured (user hasn't run `/seo-setup`, or invoked via `/seo audit <url>`), run the **no-OAuth quick path**. This finishes in <60s and produces a partial audit that's still useful — Lighthouse/GSC sections are flagged as missing rather than fabricated.
+
+**What to do:**
+
+1. **Fetch static resources** via `curl` / HTTP GET (no auth):
+   - `GET /robots.txt` — check 200, non-empty, `Sitemap:` line present, AI-bot stanza (GPTBot / ClaudeBot / Claude-SearchBot / PerplexityBot / Google-Extended named — allow or disallow, just named).
+   - `GET /sitemap.xml` — check 200, parses as XML, >0 URLs, file <500 KiB.
+   - `GET /` (homepage) plus 2 inner pages discovered from the sitemap (a content page + a category/listing page if present).
+
+2. **Parse head tags** on each fetched page:
+   - `<title>` present, length 50–60 chars ideal.
+   - `<meta name="description">` present, length 150–160 chars ideal.
+   - `<link rel="canonical">` present, self-referential or sensible.
+   - `<meta name="viewport">` present.
+   - `<script type="application/ld+json">` count ≥ 1, JSON parses without error.
+   - Exactly one `<h1>` per page.
+   - `<meta name="robots">` not `noindex` on pages that should rank.
+
+3. **AI-bot readiness check** — `robots.txt` mentions at least three of: `GPTBot`, `ClaudeBot`, `Claude-SearchBot`, `PerplexityBot`, `Google-Extended`. Absence is the bug, not the directive — both `Allow:` and `Disallow:` are valid choices. If missing, reference `templates/robots-ai-bots.txt` as a paste-ready starting point.
+
+4. **Core Web Vitals** — if `PSI_API_KEY` is set in env (or `~/.openclaw/.env`), call `scripts/psi-quick.py <url>` (CrUX field data preferred, lab fallback flagged). If no key, **skip CWV** and note it in the output rather than guessing.
+
+5. **Emit a partial `SEO_AUDIT.md`** with this banner at the top:
+
+   ```
+   > **Partial audit — Lighthouse/GSC data missing.** Run `/seo-setup` to unlock CWV + GSC analysis. Static checks below were run without OAuth.
+   ```
+
+Everything else in `SEO_AUDIT.md` follows the normal output schema below. Findings that depended on Lighthouse or GSC become explicit gaps ("CWV not measured — gated on `/seo-setup`") rather than fake data.
+
+## Output path — `SEO_AUDIT_OUTPUT` env var
+
+By default, `SEO_AUDIT.md` is written to the repo root (`./SEO_AUDIT.md`). When auditing a foreign repo (e.g., dogfooding against a user's site without committing the audit to their tree), set `SEO_AUDIT_OUTPUT` to redirect:
+
+```bash
+SEO_AUDIT_OUTPUT=~/audits/example-2026-05-12.md /seo audit https://example.com
+```
+
+Common patterns:
+- `./SEO_AUDIT.md` (default) — commit alongside the fix PR.
+- `~/audits/<domain>-<date>.md` — keep audits in a personal archive, don't pollute the target repo.
+- `/tmp/SEO_AUDIT.md` — throwaway / demo runs.
+
+Add `SEO_AUDIT.md` to the target repo's `.gitignore` if the audit is meant to be ephemeral.
+
 ## Output format — `SEO_AUDIT.md` shape
 
 ```

@@ -1,0 +1,59 @@
+# AI-search bot policy stanza for robots.txt
+#
+# Paste-ready additions to your existing robots.txt. These declare an
+# explicit allow/block per AI crawler — the auditing-technical-seo skill
+# flags "absence as the bug." Both allow and block are valid choices.
+#
+# Source policy: extracted from vibecrafting.ai (in production 2026-05).
+# Pairs with: optimizing-for-generative-engines (the GEO skill).
+
+# --- OpenAI ---
+User-Agent: GPTBot
+Allow: /
+
+User-Agent: ChatGPT-User
+Allow: /
+
+# --- Anthropic ---
+User-Agent: ClaudeBot
+Allow: /
+
+User-Agent: Claude-User
+Allow: /
+
+User-Agent: Claude-SearchBot
+Allow: /
+
+User-Agent: anthropic-ai
+Allow: /
+
+# --- Perplexity ---
+User-Agent: PerplexityBot
+Allow: /
+
+# --- Google (AI-search opt-in, separate from Googlebot) ---
+User-Agent: Google-Extended
+Allow: /
+
+# --- Common Crawl (used by many LLM training pipelines) ---
+User-Agent: CCBot
+Allow: /
+
+# --- Apple (AI training opt-in, separate from Applebot) ---
+User-Agent: Applebot-Extended
+Allow: /
+
+# --- ByteDance (commonly blocked by US/EU sites for abuse) ---
+User-Agent: Bytespider
+Disallow: /
+
+# Notes:
+#  • Replace each `Allow: /` with `Disallow: /` (or `Disallow: /private/`)
+#    if you want to opt OUT of training/citation for that crawler.
+#  • Google-Extended is INDEPENDENT of Googlebot. Blocking Google-Extended
+#    does not affect classic Google Search ranking — only AI Overviews
+#    and Bard/Gemini training.
+#  • Applebot-Extended is INDEPENDENT of Applebot. Same logic.
+#  • These stanzas are additive. Keep your `User-Agent: *` block above.
+#  • Don't forget the `Sitemap:` line at the bottom of the file:
+#      Sitemap: https://yourdomain.com/sitemap.xml

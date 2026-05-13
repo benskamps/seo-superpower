@@ -1,0 +1,17 @@
+# Local kickoff/handoff scratch — never commit
+.kickoff.md
+
+# Local audit output when dogfooding against foreign sites
+SEO_AUDIT.md
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db

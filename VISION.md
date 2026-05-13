@@ -24,6 +24,8 @@
 
 **v3 status: 5/5 planned skills shipped + `schema-validate` MCP working. 12/12 skill registry complete.**
 
+**v0.3.1 patch (2026-05-12)** — dogfood findings against vibecrafting.ai shipped: no-OAuth `/seo audit <url>` quick path (No-MCP fallback), `scripts/psi-quick.py` for CWV without `lighthouse-mcp`, `templates/robots-ai-bots.txt` paste-ready AI-bot stanza, Pass A "already-healthy" branch in meta-router, `DEVELOPING.md` for dogfood mode, `SEO_AUDIT_OUTPUT` env var documented. Rationale: `DOGFOOD-2026-05-12.md`.
+
 ## v1 — shipped
 
 - Plugin scaffold (`.claude-plugin/plugin.json`, `marketplace.json`)

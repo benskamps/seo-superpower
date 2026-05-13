@@ -14,12 +14,38 @@ Ask **at most one** clarifying question. If the live URL is known, skip the ques
 ## Diagnostic flow (run in this order)
 
 1. **Live URL provided?** No → route to `seo-bootstrap` (pre-launch setup).
-2. **`gsc-mcp` ping — is GSC connected?** No → tell user to verify domain in Search Console; meanwhile proceed with technical audit.
+2. **`gsc-mcp` ping — is GSC connected?** No → tell user to verify domain in Search Console; meanwhile proceed with technical audit. (If MCPs aren't configured at all, see "No-MCP fallback" below.)
 3. **Fetch `/robots.txt` and `/sitemap.xml`.** Either missing/broken → route to `seo-bootstrap`.
-4. **`lighthouse-mcp` on homepage.** CWV failing or indexability issues → route to `auditing-technical-seo`.
-5. **GSC has 90+ days of data?** Yes → route to `finding-underserved-keywords` for striking-distance analysis.
-6. **User reports decay** (rankings or clicks dropping) → `refreshing-stale-content` + `gsc-mcp` decay-detect.
-7. **User reports AI/LLM invisibility** → `optimizing-for-generative-engines` + (planned) `geo-check-mcp`.
+4. **Pass A — baseline health check** (run before invoking child skills). Count how many of these the homepage passes via raw HTTP fetch:
+   - `robots.txt` 200 + non-empty + `Sitemap:` line present
+   - `sitemap.xml` 200 + valid XML + >0 URLs
+   - `<title>` present (any length)
+   - `<meta name="description">` present
+   - `<link rel="canonical">` present
+   - `<meta name="viewport">` present
+   - At least one `<script type="application/ld+json">` block
+   - HTTPS + valid cert (the fetch already succeeded over HTTPS)
+   - Single `<h1>` on the page
+   - AI-bot stanza present in robots.txt (GPTBot/ClaudeBot/PerplexityBot named — allow OR disallow, just named)
+
+   **If ≥8/10 pass, this site is past bootstrap.** Output a "you're in good shape" line, list the 1–2 missed items as a one-PR cleanup, then route to growth work: `finding-underserved-keywords` (if GSC has data) or `planning-topic-clusters` / `analyzing-content-gaps` (if not). Skip `seo-bootstrap` and skip the full `auditing-technical-seo` flow.
+
+   **If <8/10 pass**, continue to step 5.
+
+5. **`lighthouse-mcp` on homepage.** CWV failing or indexability issues → route to `auditing-technical-seo`.
+6. **GSC has 90+ days of data?** Yes → route to `finding-underserved-keywords` for striking-distance analysis.
+7. **User reports decay** (rankings or clicks dropping) → `refreshing-stale-content` + `gsc-mcp` decay-detect.
+8. **User reports AI/LLM invisibility** → `optimizing-for-generative-engines` + (planned) `geo-check-mcp`.
+
+## No-MCP fallback
+
+If `lighthouse-mcp` / `gsc-mcp` aren't configured (the user hasn't run `/seo-setup` yet, or skipped OAuth):
+
+- Skip steps that name those MCPs. Use only `curl` / HTTP fetch.
+- Run Pass A (above) regardless — it needs no MCPs.
+- Run the curl-able checks from `auditing-technical-seo` (robots, sitemap, head tags, schema presence, viewport, security headers, response codes, the AI-bot stanza check).
+- Emit a partial `SEO_AUDIT.md` flagged at the top: `> Partial audit — Lighthouse/GSC data missing. Run /seo-setup to unlock CWV + GSC analysis.`
+- This path finishes in <60s and is the right answer for `/seo audit <url>` invocations where the user wants signal before committing to OAuth.
 
 ## Lifecycle decision table
 
