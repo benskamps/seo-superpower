@@ -1,6 +1,12 @@
 # seo-superpower
 
+![version](https://img.shields.io/badge/version-0.3.1-blue) ![license](https://img.shields.io/badge/license-MIT-green) ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A4FFF) ![skills](https://img.shields.io/badge/skills-14-orange)
+
 **End-to-end SEO + Generative Engine Optimization for technical builders. One command. Free-tier only.**
+
+> **Status:** v0.3.1 — working, dogfooded on [vibecrafting.ai](https://vibecrafting.ai) (2026-05-12), pre-launch, no users yet.
+
+*Part of the [Brokenbranch Lab](https://www.brokenbranch.dev/lab/).*
 
 A [Claude Code](https://claude.com/claude-code) plugin that turns SEO from "thing I'll learn someday" into a normal dev loop. Run `/seo`, get a PR. The terminal you already live in becomes your SEO dashboard.
 
@@ -33,7 +39,7 @@ Other Claude SEO tools require paid APIs (DataForSEO, $60+/mo). The SaaS giants 
 
 Or just run `/seo` with no argument. It diagnoses your phase and picks for you.
 
-## Skills included (13 total — full registry shipped)
+## Skills included (14 total — full registry shipped)
 
 | Skill | Lifecycle phase | Triggers on |
 |---|---|---|
@@ -54,11 +60,11 @@ Or just run `/seo` with no argument. It diagnoses your phase and picks for you.
 
 Plus `hooks/seo-decay-check.json` — a weekly content-decay detection hook that surfaces nudges on session start and runs on demand via `/seo refresh`.
 
-The full 12-skill registry from [VISION.md](VISION.md) is shipped. Beyond v3: cross-site comparison, multi-language hreflang, decay-check automation activation.
+All 14 skills (12 child skills + `seo-bootstrap` + the `seo-superpower` meta-router) from [VISION.md](VISION.md) are shipped. Beyond v3: cross-site comparison, multi-language hreflang, decay-check automation activation.
 
 ## MCP tools bundled
 
-- **`gsc`** — pulls per-page query data from your Google Search Console (vendored from `AminForou/mcp-gsc==0.3.2`)
+- **`gsc`** — pulls per-page query data from your Google Search Console (pulled at install time via `uvx`: `mcp-search-console==0.3.2`)
 - **`pagespeed`** — runs PageSpeed Insights / Lighthouse audits (vendored from `pagespeed-insights-mcp`)
 - **`geo-check`** — polls ChatGPT, Claude, Perplexity, and Gemini for citations of your domain. Built in this repo. Tools: `geo_check`, `geo_track`, `geo_diff` for baseline + delta tracking
 - **`schema-validate`** — offline JSON-LD validation against schema.org via `pyld` + `extruct`, with Google rich-result eligibility checks for 9 types (Article, Product, FAQPage, HowTo, BreadcrumbList, Organization, Recipe, Event, JobPosting). Built in this repo
@@ -71,7 +77,7 @@ These are how Claude actually *does* the work — pulling data, running scans, v
 ```bash
 # In Claude Code:
 /plugin marketplace add benskamps/seo-superpower
-/plugin install seo-superpower
+/plugin install seo-superpower@benskamps-marketplace
 /seo-setup
 ```
 

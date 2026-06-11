@@ -14,37 +14,39 @@ This plugin uses Model Context Protocol (MCP) servers to actually *do* things �
 2. Enable APIs:
    - https://console.cloud.google.com/apis/library/searchconsole.googleapis.com
    - https://console.cloud.google.com/apis/library/pagespeedonline.googleapis.com
-3. **GSC OAuth client** — APIs & Services → Credentials → Create Credentials → **OAuth client ID** → application type **Desktop app** → download JSON. Save to `~/.openclaw/gsc_client_secret.json`.
+3. **GSC OAuth client** — APIs & Services → Credentials → Create Credentials → **OAuth client ID** → application type **Desktop app** → download JSON. Save to `~/.config/seo-superpower/gsc_client_secret.json`.
 4. **PageSpeed API key** — same Credentials page → Create Credentials → API Key → restrict to "PageSpeed Insights API". Copy.
 
-## 2. Wire up `~/.openclaw/.env`
+## 2. Wire up `~/.config/seo-superpower/.env`
 
-Append:
+Create `~/.config/seo-superpower/.env` (the wizard and `scripts/check.sh` read this path by default) and append:
 
 ```bash
-GSC_OAUTH_CLIENT_SECRETS_FILE="$HOME/.openclaw/gsc_client_secret.json"
+GSC_OAUTH_CLIENT_SECRETS_FILE="$HOME/.config/seo-superpower/gsc_client_secret.json"
 PAGESPEED_API_KEY="AIza..."
-# Optional, for GEO MCP (v2):
+# Optional, for the geo-check MCP:
 PERPLEXITY_API_KEY="pplx-..."
 ```
 
-`ANTHROPIC_API_KEY` and `OPENAI_API_KEY` are presumed already present.
+`ANTHROPIC_API_KEY` and `OPENAI_API_KEY` are presumed already present in your shell env (used by the `geo-check` MCP).
+
+> If you already keep agent keys in `~/.openclaw/.env`, the scripts read that path as a silent fallback — you don't need to duplicate them.
 
 ## 3. Install plugin
 
 ```
 /plugin marketplace add benskamps/seo-superpower
-/plugin install seo-superpower
+/plugin install seo-superpower@benskamps-marketplace
 ```
 
-`.mcp.json` auto-registers `gsc` and `pagespeed`. The `lighthouse-local`, `geo-check`, and `schema-validate` MCPs ship disabled — flip `disabled: false` in `.mcp.json` to enable.
+`.mcp.json` auto-registers `gsc`, `pagespeed`, `geo-check`, and `schema-validate` (all enabled). Only `lighthouse-local` ships disabled — flip `disabled: false` in `.mcp.json` to enable it as a PSI-quota fallback.
 
 ## 4. Verify (paste into Claude)
 
 1. **GSC**: "list my GSC properties" → first call opens browser for OAuth → token saved to `~/.config/mcp-search-console/`. Subsequent calls are silent.
 2. **PageSpeed**: "run pagespeed for https://example.com mobile" → returns score in ~10s.
-3. (v2) **GEO**: "geo-check claude-citations for example.com" → returns provider matrix.
-4. (v2) **Schema**: "validate this JSON-LD" with a sample → returns errors/warnings.
+3. **GEO**: "geo-check claude-citations for example.com" → returns provider matrix.
+4. **Schema**: "validate this JSON-LD" with a sample → returns errors/warnings.
 
 ## Troubleshooting
 
@@ -64,11 +66,11 @@ PERPLEXITY_API_KEY="pplx-..."
 | PageSpeed Insights | 25,000 queries/day, 240 QPM | [docs](https://developers.google.com/speed/docs/insights/v5/get-started#key) |
 | Local Lighthouse (fallback) | unlimited (CPU-bound) | n/a |
 
-## What ships in v1 vs v2
+## What ships enabled
 
-**v1 (default-enabled):** `gsc`, `pagespeed`, `lighthouse-local` (opt-in fallback).
+**Enabled by default:** `gsc`, `pagespeed`, `geo-check` (multi-LLM citation polling), `schema-validate` (offline JSON-LD validation). The last two are built in this repo (`mcp-servers/`) and are working now.
 
-**v2 (default-disabled):** `geo-check` (multi-LLM citation polling), `schema-validate` (offline JSON-LD validation). These ship as stubs in `mcp-servers/` and will be filled in for v2 release.
+**Opt-in:** `lighthouse-local` — local Lighthouse fallback for when the PSI quota is hit. Flip `disabled: false` in `.mcp.json` to enable.
 
 ## Vendoring & licenses
 

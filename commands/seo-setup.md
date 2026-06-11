@@ -127,7 +127,7 @@ If yellow (e.g. PSI quota exceeded already), explain the fallback: enable `light
 
 - **User already has GSC verified for some domain.** Great, the OAuth they're about to do is for the API, not domain verification. Mention this so they don't think they're starting over.
 - **User can't find their OAuth consent screen step.** Open https://console.cloud.google.com/apis/credentials/consent for them.
-- **User's `~/.openclaw/.env` already exists.** Use that path (it's a Claude Code convention). Don't create `~/.config/seo-superpower/`.
+- **User's `~/.openclaw/.env` already exists.** That's an existing agent-runtime env dir — if it's present, reuse it silently rather than creating `~/.config/seo-superpower/`. (Default for fresh installs is `~/.config/seo-superpower/.env`.)
 - **Multi-property GSC accounts.** Don't worry about it during setup. The skill itself will list properties when first invoked.
 
 ## Persona reminder

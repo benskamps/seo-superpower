@@ -5,12 +5,13 @@
 
 set -u
 
-# Pick the env file: prefer ~/.openclaw/.env (Claude convention), fall back to ~/.config/seo-superpower/.env
+# Pick the env file: prefer ~/.config/seo-superpower/.env (the documented default),
+# fall back silently to ~/.openclaw/.env if that's where keys already live.
 ENV_FILE=""
-if [ -f "$HOME/.openclaw/.env" ]; then
-  ENV_FILE="$HOME/.openclaw/.env"
-elif [ -f "$HOME/.config/seo-superpower/.env" ]; then
+if [ -f "$HOME/.config/seo-superpower/.env" ]; then
   ENV_FILE="$HOME/.config/seo-superpower/.env"
+elif [ -f "$HOME/.openclaw/.env" ]; then
+  ENV_FILE="$HOME/.openclaw/.env"
 fi
 
 # Source env if found
@@ -38,7 +39,7 @@ echo ""
 if [ -n "$ENV_FILE" ]; then
   ok "Env file: $ENV_FILE"
 else
-  fail "No env file found at ~/.openclaw/.env or ~/.config/seo-superpower/.env. Run /seo-setup."
+  fail "No env file found at ~/.config/seo-superpower/.env (or ~/.openclaw/.env fallback). Run /seo-setup."
 fi
 
 # 2. GSC client secrets
