@@ -1,19 +1,19 @@
 # `mcp-servers/`
 
-Two thin Python MCP servers we own (no good upstream exists). Both ship as stubs in v1, default-disabled in `.mcp.json`. Implementation lands in v2.
+Two thin Python MCP servers we own (no good upstream exists). Both are **working and enabled** in `.mcp.json` as of v0.3.x — `geo-check` (~560 LOC) and `schema-validate` (~640 LOC).
 
 ## `geo-check/`
 
 **Purpose:** poll ChatGPT / Claude / Perplexity / Gemini with target prompts and detect whether a domain gets cited. Output: provider × prompt matrix of citation hits.
 
-**Why we build it ourselves:** no mature MCP exists for multi-provider citation tracking. Existing GEO SaaS (Profound, AthenaHQ, Otterly) charge $99–295/mo for this exact capability. ~150–200 LOC for a working stub.
+**Why we build it ourselves:** no mature MCP exists for multi-provider citation tracking. Existing GEO SaaS (Profound, AthenaHQ, Otterly) charge $99–295/mo for this exact capability. ~560 LOC, working.
 
 **Tools to expose:**
 - `geo_check(domain, prompts[], providers[])` → `{provider: {prompt: {cited: bool, context: str}}}`
 - `geo_track(domain, prompt, frequency)` → registers a daily/weekly poll
 - `geo_diff(domain, since)` → diffs current citations vs. baseline
 
-**Auth:** uses provider keys from `~/.openclaw/.env` (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `PERPLEXITY_API_KEY`).
+**Auth:** uses provider keys from your env / `~/.config/seo-superpower/.env` (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `PERPLEXITY_API_KEY`).
 
 ## `schema-validate/`
 
@@ -39,7 +39,7 @@ The two MCPs in *this* directory are ones we own — no upstream to depend on.
 
 ## Status
 
-| Server | v1 | v2 target |
+| Server | Status | Capability |
 |---|---|---|
-| `geo-check/server.py` | stub | working multi-provider polling |
-| `schema-validate/server.py` | stub | full JSON-LD validation |
+| `geo-check/server.py` | ✅ working, enabled | multi-provider citation polling (`geo_check` / `geo_track` / `geo_diff`) |
+| `schema-validate/server.py` | ✅ working, enabled | offline JSON-LD validation + extraction + Google rich-result field checks |

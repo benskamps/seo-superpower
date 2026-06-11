@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """psi-quick.py — quick PageSpeed Insights CWV fetch.
 
-No MCP, no OAuth. Reads PSI_API_KEY from env (or ~/.openclaw/.env), hits the
+No MCP, no OAuth. Reads PSI_API_KEY from env (or ~/.config/seo-superpower/.env,
+with ~/.openclaw/.env as a silent fallback), hits the
 public PageSpeed Insights v5 API, prints LCP / INP / CLS / TTFB. Prefers
 CrUX field data (loadingExperience) when present; falls back to lab data
 (lighthouseResult.audits) and flags which it used.
@@ -32,13 +33,19 @@ PSI_ENDPOINT = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
 
 
 def load_api_key() -> str | None:
-    """Look up PSI_API_KEY in env, then ~/.openclaw/.env as a fallback."""
+    """Look up PSI_API_KEY in env, then the .env files (default path first)."""
     key = os.environ.get("PSI_API_KEY")
     if key:
         return key.strip()
 
-    env_path = Path.home() / ".openclaw" / ".env"
-    if env_path.is_file():
+    # Documented default first, then ~/.openclaw/.env as a silent fallback.
+    env_paths = [
+        Path.home() / ".config" / "seo-superpower" / ".env",
+        Path.home() / ".openclaw" / ".env",
+    ]
+    for env_path in env_paths:
+        if not env_path.is_file():
+            continue
         try:
             for line in env_path.read_text(encoding="utf-8").splitlines():
                 line = line.strip()
@@ -169,7 +176,7 @@ def main(argv: list[str] | None = None) -> int:
     api_key = load_api_key()
     if not api_key:
         print(
-            "error: PSI_API_KEY not set (env or ~/.openclaw/.env). "
+            "error: PSI_API_KEY not set (env or ~/.config/seo-superpower/.env). "
             "Get one free at https://developers.google.com/speed/docs/insights/v5/get-started",
             file=sys.stderr,
         )

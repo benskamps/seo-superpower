@@ -10,7 +10,7 @@ You don't need to know what an OAuth client is. The wizard does the thinking.
 
 ```
 /plugin marketplace add benskamps/seo-superpower
-/plugin install seo-superpower
+/plugin install seo-superpower@benskamps-marketplace
 /seo-setup
 ```
 
@@ -50,11 +50,14 @@ That's the whole list. No credit card. No SaaS subscriptions. No DataForSEO key.
 
 ## Stuck?
 
-Run this in your terminal to check what's working and what isn't:
+Run the readiness check from inside the installed plugin. It lives under your Claude Code plugins dir:
 
 ```bash
-~/projects/seo-superpower/scripts/check.sh
+# Installed plugins land here (path may vary slightly by platform):
+bash ~/.claude/plugins/*/seo-superpower/scripts/check.sh
 ```
+
+Or just ask Claude Code: **"run the seo-superpower readiness check"** — it knows where the plugin is installed (`$CLAUDE_PLUGIN_ROOT`).
 
 It'll print a green ✅ or red ❌ for each requirement and tell you the exact fix.
 

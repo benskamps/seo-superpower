@@ -53,7 +53,7 @@ When `lighthouse-mcp` and `gsc-mcp` aren't configured (user hasn't run `/seo-set
 
 3. **AI-bot readiness check** — `robots.txt` mentions at least three of: `GPTBot`, `ClaudeBot`, `Claude-SearchBot`, `PerplexityBot`, `Google-Extended`. Absence is the bug, not the directive — both `Allow:` and `Disallow:` are valid choices. If missing, reference `templates/robots-ai-bots.txt` as a paste-ready starting point.
 
-4. **Core Web Vitals** — if `PSI_API_KEY` is set in env (or `~/.openclaw/.env`), call `scripts/psi-quick.py <url>` (CrUX field data preferred, lab fallback flagged). If no key, **skip CWV** and note it in the output rather than guessing.
+4. **Core Web Vitals** — if `PSI_API_KEY` is set in env (or `~/.config/seo-superpower/.env`), call `scripts/psi-quick.py <url>` (CrUX field data preferred, lab fallback flagged). If no key, **skip CWV** and note it in the output rather than guessing.
 
 5. **Emit a partial `SEO_AUDIT.md`** with this banner at the top:
 

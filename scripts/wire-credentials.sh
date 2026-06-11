@@ -9,7 +9,8 @@
 
 set -euo pipefail
 
-# Pick env home: prefer ~/.openclaw/ (Claude convention), else ~/.config/seo-superpower/
+# Pick env home. Default is ~/.config/seo-superpower/. If the user already keeps
+# agent keys in ~/.openclaw/, reuse that silently so existing setups keep working.
 if [ -d "$HOME/.openclaw" ]; then
   ENV_HOME="$HOME/.openclaw"
 else
