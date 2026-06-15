@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate plugin + skills
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate skill frontmatter, commands, plugin.json, marketplace.json
+        run: python3 scripts/ci-validate.py
+
+  mcp-smoke:
+    name: Smoke-test MCP servers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Syntax-only gate first: catches a broken entrypoint without needing deps.
+      - name: Compile MCP server entrypoints
+        run: |
+          python3 -m py_compile mcp-servers/geo-check/server.py
+          python3 -m py_compile mcp-servers/schema-validate/server.py
+
+      # Real import smoke test: install each server's deps and import the module.
+      # `mcp.run()` lives behind `if __name__ == "__main__"`, so importing builds
+      # the FastMCP app + tool registrations without starting the stdio loop.
+      - name: Import geo-check server
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r mcp-servers/geo-check/requirements.txt
+          python3 -c "import importlib.util, pathlib; \
+            spec = importlib.util.spec_from_file_location('geo_check_server', 'mcp-servers/geo-check/server.py'); \
+            mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod); \
+            print('geo-check imported OK')"
+
+      - name: Import schema-validate server
+        run: |
+          python3 -m pip install -r mcp-servers/schema-validate/requirements.txt
+          python3 -c "import importlib.util, pathlib; \
+            spec = importlib.util.spec_from_file_location('schema_validate_server', 'mcp-servers/schema-validate/server.py'); \
+            mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod); \
+            print('schema-validate imported OK')"
