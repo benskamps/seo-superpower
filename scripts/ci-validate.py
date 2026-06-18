@@ -12,12 +12,21 @@ Checks:
   3. Plugin JSON — .claude-plugin/plugin.json parses and has name + version + description.
   4. Marketplace JSON — .claude-plugin/marketplace.json parses and has name + plugins[],
      each plugin entry having name + source.
+  5. Reference smoke test — every path/skill referenced from a manifest or command
+     actually exists on disk (no dangling references):
+       - marketplace.json plugin `source` paths resolve to a real directory
+         containing a plugin manifest (.claude-plugin/plugin.json), with "."
+         meaning the repo root.
+       - .mcp.json server entrypoints (after stripping ${CLAUDE_PLUGIN_ROOT}) exist.
+       - skills/<x>/SKILL.md paths referenced from commands/*.md exist.
+       - `/seo` routing targets (`→ `skill-slug``) map to a real skills/<slug>/ dir.
 
 Exit code 0 = all green, 1 = at least one failure.
 """
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -126,6 +135,69 @@ else:
             check(bool(entry.get("source")), f"marketplace.json plugins[{i}] has source")
     except json.JSONDecodeError as e:
         check(False, f"marketplace.json parses as JSON ({e})")
+
+# ---------------------------------------------------------------------------
+# 5. Reference smoke test — nothing referenced should dangle.
+# ---------------------------------------------------------------------------
+print("Reference smoke test (no dangling references):")
+
+# 5a. marketplace.json plugin `source` -> real plugin dir.
+# A plugin source is a path relative to the marketplace root; "." is the repo
+# root. The target must contain a plugin manifest at .claude-plugin/plugin.json.
+if market_path.exists():
+    try:
+        market = json.loads(market_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        market = {}
+    for i, entry in enumerate(market.get("plugins", []) or []):
+        source = entry.get("source")
+        # Only local-path sources are checkable here; skip git/url object sources.
+        if isinstance(source, str):
+            target = (ROOT / source).resolve()
+            manifest = target / ".claude-plugin" / "plugin.json"
+            check(
+                target.is_dir() and manifest.exists(),
+                f"marketplace.json plugins[{i}] source '{source}' "
+                f"resolves to a plugin dir (has .claude-plugin/plugin.json)",
+            )
+
+# 5b. .mcp.json server entrypoints exist on disk.
+# Args reference ${CLAUDE_PLUGIN_ROOT}/... for the in-repo servers; strip the
+# placeholder and resolve against the repo root. Skip args that point at
+# external packages (uvx/npx) — those are not files in this repo.
+mcp_path = ROOT / ".mcp.json"
+if mcp_path.exists():
+    try:
+        mcp = json.loads(mcp_path.read_text(encoding="utf-8"))
+        check(True, ".mcp.json parses as JSON")
+    except json.JSONDecodeError as e:
+        mcp = {}
+        check(False, f".mcp.json parses as JSON ({e})")
+    for name, server in (mcp.get("mcpServers", {}) or {}).items():
+        for arg in server.get("args", []) or []:
+            if not isinstance(arg, str) or "${CLAUDE_PLUGIN_ROOT}" not in arg:
+                continue
+            rel = arg.replace("${CLAUDE_PLUGIN_ROOT}", "").lstrip("/\\")
+            check(
+                (ROOT / rel).exists(),
+                f".mcp.json server '{name}' entrypoint '{rel}' exists",
+            )
+
+# 5c. skills/<x>/SKILL.md paths referenced from commands/*.md exist, and
+# 5d. `/seo` routing targets (`→ `skill-slug``) map to a real skill dir.
+SKILL_PATH_RE = re.compile(r"skills/[a-z0-9][a-z0-9-]*/SKILL\.md")
+ROUTE_TARGET_RE = re.compile(r"→\s*`([a-z0-9][a-z0-9-]*)`")
+existing_skill_dirs = {p.name for p in (ROOT / "skills").glob("*/") if p.is_dir()}
+for cf in cmd_files:
+    rel = cf.relative_to(ROOT).as_posix()
+    text = cf.read_text(encoding="utf-8")
+    for ref in sorted(set(SKILL_PATH_RE.findall(text))):
+        check((ROOT / ref).exists(), f"{rel}: referenced '{ref}' exists")
+    for slug in sorted(set(ROUTE_TARGET_RE.findall(text))):
+        check(
+            slug in existing_skill_dirs,
+            f"{rel}: route target '{slug}' -> skills/{slug}/ exists",
+        )
 
 # ---------------------------------------------------------------------------
 # Summary
