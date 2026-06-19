@@ -20,6 +20,8 @@ Checks:
        - .mcp.json server entrypoints (after stripping ${CLAUDE_PLUGIN_ROOT}) exist.
        - skills/<x>/SKILL.md paths referenced from commands/*.md exist.
        - `/seo` routing targets (`→ `skill-slug``) map to a real skills/<slug>/ dir.
+       - hooks/*.json command scripts (the local files a hook shells out to, after
+         stripping ${CLAUDE_PROJECT_DIR}/${CLAUDE_PLUGIN_ROOT}) exist on disk.
 
 Exit code 0 = all green, 1 = at least one failure.
 """
@@ -198,6 +200,60 @@ for cf in cmd_files:
             slug in existing_skill_dirs,
             f"{rel}: route target '{slug}' -> skills/{slug}/ exists",
         )
+
+# 5e. hooks/*.json command scripts exist on disk.
+# A hook can shell out to a local script via {"type": "command", "command": "..."}.
+# Those scripts ship in this repo but were not previously reference-checked, so a
+# typo'd or missing script (e.g. a hook pointing at scripts/foo.js that no one
+# created) shipped silently. Walk every hook config, find each command's local
+# script token, and confirm the file exists. Commands that invoke nothing local
+# (pure shell builtins, external binaries on PATH) are skipped.
+PLACEHOLDER_RE = re.compile(r"\$\{[A-Z_]+\}")
+# A local script token: ends in a known script extension this repo uses.
+LOCAL_SCRIPT_RE = re.compile(r"\S+\.(?:js|mjs|cjs|py|sh)\b")
+
+
+def collect_hook_commands(node) -> list[str]:
+    """Recursively pull every {"type": "command", "command": "..."} string."""
+    found: list[str] = []
+    if isinstance(node, dict):
+        if node.get("type") == "command" and isinstance(node.get("command"), str):
+            found.append(node["command"])
+        for value in node.values():
+            found.extend(collect_hook_commands(value))
+    elif isinstance(node, list):
+        for item in node:
+            found.extend(collect_hook_commands(item))
+    return found
+
+
+def hook_script_target(command: str) -> str | None:
+    """Extract the local script path a hook command runs, or None if it runs
+    no in-repo script (external binary / shell builtin only)."""
+    m = LOCAL_SCRIPT_RE.search(command)
+    if not m:
+        return None
+    token = m.group(0)
+    # Strip ${CLAUDE_PROJECT_DIR}/, ${CLAUDE_PLUGIN_ROOT}/, etc. and leading sep.
+    token = PLACEHOLDER_RE.sub("", token).lstrip("/\\")
+    return token or None
+
+
+print("Hook command scripts (no dangling references):")
+hook_files = sorted((ROOT / "hooks").glob("*.json"))
+for hf in hook_files:
+    rel = hf.relative_to(ROOT).as_posix()
+    try:
+        hook_cfg = json.loads(hf.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        check(False, f"{rel}: parses as JSON ({e})")
+        continue
+    commands = collect_hook_commands(hook_cfg.get("hooks", {}))
+    for cmd in commands:
+        target = hook_script_target(cmd)
+        if target is None:
+            continue  # nothing local to resolve
+        check((ROOT / target).exists(), f"{rel}: hook script '{target}' exists")
 
 # ---------------------------------------------------------------------------
 # Summary
