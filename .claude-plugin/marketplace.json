@@ -8,10 +8,10 @@
     {
       "name": "seo-superpower",
       "source": ".",
-      "description": "End-to-end SEO + Generative Engine Optimization (GEO) for technical builders. One command (/seo) drives the whole flow: bootstrap, audit, find underserved keywords, refresh stale content. Works on free-tier GSC + PageSpeed only — no DataForSEO, no $200/mo SaaS.",
+      "description": "End-to-end SEO + Generative Engine Optimization (GEO) for builders: one command (/seo) bootstraps, audits, validates schema, detects content decay, ships content-refresh PRs, and tracks AI citations — free-tier GSC + PageSpeed only, no $200/mo SaaS.",
       "version": "0.3.1",
       "category": "seo",
-      "tags": ["seo", "geo", "search-console", "lighthouse", "next.js", "astro"]
+      "tags": ["seo", "geo", "generative-engine-optimization", "search-console", "lighthouse", "core-web-vitals", "schema-validation", "content-decay", "ai-citations", "next.js", "astro", "sveltekit", "claude-code"]
     }
   ]
 }

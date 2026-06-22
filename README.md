@@ -19,6 +19,9 @@ A [Claude Code](https://claude.com/claude-code) plugin that turns SEO from "thin
 
 That's it. After setup, just type `/seo`. The plugin figures out your site's lifecycle phase (just shipped? indexed but stalled? mature and decaying?), runs the right diagnostic in parallel, and routes you to the right action — usually a PR.
 
+**Get started:** [QUICKSTART.md](QUICKSTART.md) — the exact prompts to type in 5 minutes.
+**Reference:** [skills/REGISTRY.md](skills/REGISTRY.md) (all 14 skills) · [MCP_SERVERS.md](MCP_SERVERS.md) (the bundled tools).
+
 ---
 
 ## Why this exists
@@ -85,7 +88,9 @@ These are how Claude actually *does* the work — pulling data, running scans, v
 
 When the wizard says ✅ — type `/seo` in any project. That's the whole product.
 
-Full install guide: [INSTALL.md](INSTALL.md). DIY/manual path: [MCP_SETUP.md](MCP_SETUP.md).
+Full install guide: [INSTALL.md](INSTALL.md). DIY/manual path: [MCP_SETUP.md](MCP_SETUP.md). First prompts to type: [QUICKSTART.md](QUICKSTART.md).
+
+Subscribe to releases: https://github.com/benskamps/seo-superpower/releases.atom
 
 ## The wedge
 
