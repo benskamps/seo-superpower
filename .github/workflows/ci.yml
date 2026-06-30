@@ -18,6 +18,11 @@ jobs:
       - name: Validate skill frontmatter, commands, plugin.json, marketplace.json
         run: python3 scripts/ci-validate.py
 
+      # Stdlib-only unit tests for the no-MCP PSI fallback (scripts/psi-quick.py).
+      # Loaded offline via importlib spec-load — no network, no secrets.
+      - name: Unit tests (stdlib unittest)
+        run: python3 -m unittest discover -s test
+
   mcp-smoke:
     name: Smoke-test MCP servers
     runs-on: ubuntu-latest
