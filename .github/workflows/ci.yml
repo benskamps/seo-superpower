@@ -18,6 +18,24 @@ jobs:
       - name: Validate skill frontmatter, commands, plugin.json, marketplace.json
         run: python3 scripts/ci-validate.py
 
+  node-test:
+    name: Unit-test hook scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Stdlib node:test runner — no package.json, zero deps. Exercises the
+      # decay-check hook scripts (scripts/decay-check-*.js). The bare `node
+      # --test` form discovers test files (test/*.test.js) from the repo root;
+      # it is the portable invocation (a directory positional is not expanded
+      # by every Node 22 build).
+      - name: Run node:test suite
+        run: node --test
+
   mcp-smoke:
     name: Smoke-test MCP servers
     runs-on: ubuntu-latest
