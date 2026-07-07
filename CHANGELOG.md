@@ -14,6 +14,19 @@ small additions ship as patch releases (`0.3.x`); new skills ship as minor relea
 
 ### Added
 
+- **GEO Diff Bot** (`scripts/geo-diff-bot.js`) + `tracking-citation-diffs` skill —
+  daily AI-citation diff correlated to the git commit that caused each change.
+  Diffs two `geo-check` snapshots into gained/lost/unchanged citations, then
+  git-blames the content files that changed in the window to attribute each
+  gained/lost citation to the content commit(s) that plausibly caused it — or
+  flags it `external` (model update / competitor / crawl refresh) when no
+  content changed in the repo. Pure, offline, deterministic engine (no LLM
+  calls); the live snapshot fetch remains the existing `geo_track` MCP tool.
+  Fully unit-tested (`test/geo-diff-bot.test.js`, incl. against a real temp
+  git repo). Routed via `/seo geo-diff`. Brings the shipped skill count to 15.
+- `geo_track` now stamps each snapshot with the current git commit (`commit`
+  field), enabling the Diff Bot's commit correlation. Null outside a git repo
+  (the Diff Bot degrades gracefully to a diff-only report).
 - `CHANGELOG.md` (this file) — reconstructed history from `v0.1.1` onward.
 - `CONTRIBUTING.md` — the skill-contribution path, repo layout, validation
   expectations, and PR conventions.
