@@ -46,6 +46,7 @@ import asyncio
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -92,6 +93,30 @@ def _model_for(provider: str) -> str:
         "perplexity": os.getenv("GEO_CHECK_PERPLEXITY_MODEL", "sonar"),
         "gemini":     os.getenv("GEO_CHECK_GEMINI_MODEL",     "gemini-2.0-flash"),
     }[provider]
+
+
+def _git_head(cwd: str | None = None) -> str | None:
+    """Return the full git HEAD SHA for `cwd` (default: process cwd), or None.
+
+    Snapshots stamp this so the GEO Diff Bot (scripts/geo-diff-bot.js) can
+    correlate a citation change to the content commit(s) that landed between
+    two runs. Failing silently (not a git repo, git missing) is fine — the diff
+    bot degrades to a diff-only report when the field is absent.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if out.returncode != 0:
+        return None
+    sha = out.stdout.strip()
+    return sha or None
 
 
 def _normalize_domain(domain: str) -> str:
@@ -427,8 +452,11 @@ async def geo_track(
             `.claude/seo/geo-baseline.json` (relative to cwd).
         providers: Subset of providers; defaults to anthropic/openai/perplexity.
 
+    The written JSON is the snapshot the GEO Diff Bot consumes; it includes a
+    `commit` field (git HEAD at snapshot time, or null outside a git repo).
+
     Returns:
-        {"path": "...", "timestamp": "...", "summary": "...", "hits": {...}}
+        {"path": "...", "timestamp": "...", "commit": "...", "summary": "...", "hits": {...}}
     """
     matrix = await _geo_check_impl(domain, prompts, providers)
     timestamp = datetime.now(timezone.utc).isoformat()
@@ -436,6 +464,10 @@ async def geo_track(
         "schema_version": 1,
         "domain": _normalize_domain(domain),
         "timestamp": timestamp,
+        # Git HEAD at snapshot time — lets the GEO Diff Bot correlate a citation
+        # change to the commit(s) that landed between two snapshots. Null when
+        # cwd isn't a git repo (the diff bot degrades to a diff-only report).
+        "commit": _git_head(),
         "providers": providers or DEFAULT_PROVIDERS,
         "prompts": prompts,
         "results": matrix,
@@ -451,6 +483,7 @@ async def geo_track(
     return {
         "path": str(out.resolve()),
         "timestamp": timestamp,
+        "commit": payload["commit"],
         "summary": _summary_line(matrix),
         "hits": hits,
     }
