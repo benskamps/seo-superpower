@@ -1,6 +1,6 @@
 # seo-superpower
 
-![version](https://img.shields.io/badge/version-0.3.1-blue) ![license](https://img.shields.io/badge/license-MIT-green) ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A4FFF) ![skills](https://img.shields.io/badge/skills-15-orange)
+![version](https://img.shields.io/badge/version-0.3.1-blue) ![license](https://img.shields.io/badge/license-MIT-green) ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A4FFF) ![skills](https://img.shields.io/badge/skills-16-orange)
 
 **End-to-end SEO + Generative Engine Optimization for technical builders. One command. Free-tier only.**
 
@@ -37,13 +37,14 @@ Other Claude SEO tools require paid APIs (DataForSEO, $60+/mo). The SaaS giants 
 | **Day 1** (just shipped) | `/seo bootstrap` | PR with sitemap, robots.txt, OG image, JSON-LD schema. Framework auto-detected (Next.js / Astro / SvelteKit). |
 | **Week 1** (pre-rankings) | `/seo audit` | Prioritized fix list ranked by traffic-impact × fix-effort. Lighthouse + indexability + schema. |
 | **Month 2+** (have GSC data) | `/seo underserved` | Striking-distance keyword opportunities you already rank for, pulled from your GSC. |
+| **Growth** (writing new) | `/seo brief "<topic>"` | Research-grounded content brief (keyword+intent, striking-distance angle, headline moat, entities/PAA, internal links, word-count target) **plus a draft file, opened as a PR**. Brief to merged PR. |
 | **Mature** (decay risk) | `/seo refresh` | Auto-detects pages losing >20% impressions. Ships a refresh PR. |
 | **Always-on** | `/seo geo-check` | Polls ChatGPT / Perplexity / Claude for citations of your site. Tracks share over time. |
 | **Always-on** | `/seo geo-diff` | Diffs two citation snapshots and ties each gained/lost citation to the commit that caused it — or flags it as an external shift. |
 
 Or just run `/seo` with no argument. It diagnoses your phase and picks for you.
 
-## Skills included (15 total — full registry shipped)
+## Skills included (16 total — full registry shipped)
 
 | Skill | Lifecycle phase | Triggers on |
 |---|---|---|
@@ -58,6 +59,7 @@ Or just run `/seo` with no argument. It diagnoses your phase and picks for you.
 | `optimizing-for-generative-engines` | Cross-cutting | "GEO", "ChatGPT citations", "AI Overview", "track AI search" |
 | `tracking-citation-diffs` | Cross-cutting (Mature) | "citation diff", "did my PR win/lose citations", "why did ChatGPT stop citing us" |
 | `analyzing-content-gaps` | Growth | "why does X outrank us", "content gap", "content brief" |
+| `generating-content-briefs` | Growth | "/seo brief", "brief to PR", "write a brief for X and a draft" |
 | [`finding-underserved-keywords`](https://github.com/benskamps/finding-underserved-keywords) | Growth + Mature | "GSC analysis", "striking distance keywords", impression/CTR gaps |
 | `building-eeat-and-authority` | Growth → Mature | "E-E-A-T", "author bios", "build authority", "YMYL" |
 | `generating-programmatic-seo` | Growth → Mature | "programmatic SEO", "scale content", "city pages from data" |
@@ -65,7 +67,7 @@ Or just run `/seo` with no argument. It diagnoses your phase and picks for you.
 
 Plus `hooks/seo-decay-check.json` — a weekly content-decay detection hook that surfaces nudges on session start and runs on demand via `/seo refresh`.
 
-All 15 skills (13 child skills + `seo-bootstrap` + the `seo-superpower` meta-router) are shipped — the 14 from [VISION.md](VISION.md) plus `tracking-citation-diffs` (the GEO Diff Bot). Beyond v3: cross-site comparison, multi-language hreflang, decay-check automation activation.
+All 16 skills (14 child skills + `seo-bootstrap` + the `seo-superpower` meta-router) are shipped — the 14 from [VISION.md](VISION.md) plus `tracking-citation-diffs` (the GEO Diff Bot) and `generating-content-briefs` (the `/seo brief` moat). Beyond v3: cross-site comparison, multi-language hreflang, decay-check automation activation.
 
 ## MCP tools bundled
 

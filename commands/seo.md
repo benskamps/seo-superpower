@@ -29,7 +29,7 @@ If `$ARGUMENTS` contains an explicit intent, skip diagnosis and route directly:
 - `programmatic` or `scale` → `generating-programmatic-seo`
 - `geo-check` or `geo` → `optimizing-for-generative-engines` (uses geo-check MCP)
 - `geo-diff` or `citation-diff` or `citations` → `tracking-citation-diffs` (diffs two geo-check snapshots + correlates each citation change to the commit that caused it; runs `scripts/geo-diff-bot.js`)
-- `brief` → `analyzing-content-gaps` (content brief from competitor SERP)
+- `brief` → `generating-content-briefs` (topic → research-grounded brief + a draft, then the draft-to-PR path; composes `finding-underserved-keywords` for the striking-distance angle and `analyzing-content-gaps` for the SERP diff)
 
 Follow the 1-call rule: at most one clarifying question. Default to running diagnostics in parallel when ambiguous. Output a routing report (what you found, what you're doing, what the user gets), then execute.
 

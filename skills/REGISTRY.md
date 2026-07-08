@@ -2,9 +2,9 @@
 
 Every skill in the plugin, sourced from each `SKILL.md` frontmatter so it stays correct.
 The meta-router (`seo-superpower`) is listed first — it's the one that fires on vague requests
-and routes to the rest. The other 14 are listed by where they fall in a site's lifecycle.
+and routes to the rest. The other 15 are listed by where they fall in a site's lifecycle.
 
-> 15 skills total. "Triggers on" is a short read of each skill's `description`; the full trigger
+> 16 skills total. "Triggers on" is a short read of each skill's `description`; the full trigger
 > phrasing lives in the linked `SKILL.md`. Lifecycle phases: **Initial** (pre-launch / day 1) →
 > **Growth** (ranking, have GSC data) → **Mature** (decay defense). "Cross-cutting" skills apply
 > at any phase.
@@ -22,6 +22,7 @@ and routes to the rest. The other 14 are listed by where they fall in a site's l
 | [optimizing-for-generative-engines](optimizing-for-generative-engines/SKILL.md) | `optimizing-for-generative-engines` | "GEO", "get cited in ChatGPT", "Perplexity ranking", "AI Overview", "make this LLM-citable" | Cross-cutting | LLM-citability edits + AI-citation tracking; citation-decay defense on mature pages. |
 | [tracking-citation-diffs](tracking-citation-diffs/SKILL.md) | `tracking-citation-diffs` | "citation diff", "did my PR win/lose citations", "why did ChatGPT stop citing us", "daily GEO diff" | Cross-cutting (Mature) | The GEO Diff Bot: diffs two geo-check snapshots and correlates each gained/lost citation to the commit that caused it — or flags it external. Runs `scripts/geo-diff-bot.js`. |
 | [analyzing-content-gaps](analyzing-content-gaps/SKILL.md) | `analyzing-content-gaps` | "content gap", "why does X outrank us", "competitor SERP", "content brief" | Growth | `CONTENT_BRIEF.md` — top-3 SERP diff (entities, H2s, schema, depth, freshness, AIO) ranked by impact. |
+| [generating-content-briefs](generating-content-briefs/SKILL.md) | `generating-content-briefs` | "/seo brief", "brief to PR", "write a brief for X and a draft", "turn this topic into a post" | Growth | The brief-to-PR moat: `/seo brief <topic>` → `CONTENT_BRIEF.md` (keyword+intent, striking-distance angle, headline moat, entities/PAA, internal links, word-count target) + a `draft: true` content file + the draft-to-PR wiring. Deterministic assembler: `scripts/brief-assembly.js`. |
 | [finding-underserved-keywords](finding-underserved-keywords/SKILL.md) | `finding-underserved-keywords` | "GSC analysis", "striking-distance keywords", impression/CTR gaps, "content refresh" | Growth + Mature | Low-hanging keyword opportunities from your GSC data, GEO-integrated. (Also a standalone repo.) |
 | [building-eeat-and-authority](building-eeat-and-authority/SKILL.md) | `building-eeat-and-authority` | "E-E-A-T", "author bios", "build authority", "thought leadership SEO", "YMYL" | Growth → Mature | Author bios, trust signals, an authority moat plan. Long game — invest 6+ months early. |
 | [generating-programmatic-seo](generating-programmatic-seo/SKILL.md) | `generating-programmatic-seo` | "programmatic SEO", "scale content", "city pages", "[X] for [Y] pages", "directory site SEO" | Growth → Mature | Data → template → LLM enrichment → per-page schema → sitemap → internal-link graph, with anti-spam quality gates. |

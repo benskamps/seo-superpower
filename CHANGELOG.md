@@ -14,6 +14,22 @@ small additions ship as patch releases (`0.3.x`); new skills ship as minor relea
 
 ### Added
 
+- **Brief-to-PR flow** (`scripts/brief-assembly.js`) + `generating-content-briefs`
+  skill — the `/seo brief "<topic>"` moat. Turns a topic (+ optional keyword/URL)
+  into a research-grounded `CONTENT_BRIEF.md` (target keyword + intent, the
+  striking-distance angle from your GSC, a headline moat of title + H2 outline
+  with 40–50 word AIO-answer stubs, entities/PAA questions, internal-link
+  suggestions ranked from your own repo content, and a competitor-median ±20%
+  word-count target) **plus a `draft: true` content file**, then prints the
+  draft-to-PR wiring (branch → commit → `gh pr create` with the brief as the PR
+  body). The brief ASSEMBLY is a pure, deterministic, fully unit-tested core
+  (`test/brief-assembly.test.js`, 31 tests incl. a real temp-dir content scan);
+  the live GSC/SERP data and the draft's prose are documented seams (`--gsc`,
+  `--serp`, and the writer) — no LLM/network call in the deterministic core, so
+  green CI can't hide a stub. Reuses the `finding-underserved-keywords`
+  striking-distance method (in code) and composes `analyzing-content-gaps` for
+  the SERP diff. Routed via `/seo brief` (repointed from `analyzing-content-gaps`,
+  which stays reachable via `/seo gap`). Brings the shipped skill count to 16.
 - **GEO Diff Bot** (`scripts/geo-diff-bot.js`) + `tracking-citation-diffs` skill —
   daily AI-citation diff correlated to the git commit that caused each change.
   Diffs two `geo-check` snapshots into gained/lost/unchanged citations, then
