@@ -1,20 +1,32 @@
 # geo-check MCP server
 
-The **GEO Diff Bot** — polls ChatGPT, Claude, Perplexity (and optionally
-Gemini) with target prompts and detects whether your domain gets cited.
+Polls ChatGPT, Claude, Perplexity (and optionally Gemini) with target
+prompts and detects whether your domain gets cited.
 
-This is the killer feature of `seo-superpower`: traditional SEO rank
-tracking is for Google, but **Generative Engine Optimization (GEO)**
-is what matters when users ask AI assistants for recommendations. This
-MCP lets you measure it.
+This is the citation-measurement half of `seo-superpower`: traditional SEO
+rank tracking is for Google, but **Generative Engine Optimization (GEO)** is
+what matters when users ask AI assistants for recommendations. This MCP lets
+you measure it.
+
+> **This server produces snapshots; the GEO Diff Bot consumes them.**
+> `geo_track` writes a timestamped, **git-commit-stamped** snapshot to disk.
+> `scripts/geo-diff-bot.js` (the **GEO Diff Bot**) then diffs two snapshots
+> and correlates every gained/lost citation to the content commit that caused
+> it — or flags it as an external shift when nothing in your repo changed.
+> See the `tracking-citation-diffs` skill for that workflow.
 
 ## Tools exposed
 
 | Tool         | What it does                                                                 |
 | ------------ | ---------------------------------------------------------------------------- |
 | `geo_check`  | One-shot: poll providers and return a citation matrix.                       |
-| `geo_track`  | Run a check + write a JSON baseline to disk (timestamped).                   |
-| `geo_diff`   | Compare a fresh check against the saved baseline; tag prompts gained/lost.   |
+| `geo_track`  | Run a check + write a JSON snapshot to disk (timestamped + git-commit-stamped). |
+| `geo_diff`   | Compare a *fresh live check* against a saved baseline; tag prompts gained/lost. |
+
+> `geo_diff` compares live-vs-baseline in one call. For the **offline,
+> deterministic diff of two saved snapshots with git-commit correlation**,
+> use the GEO Diff Bot (`scripts/geo-diff-bot.js`) — it never calls an LLM
+> and is fully unit-tested.
 
 All three accept the same core args: `domain` (str), `prompts` (list of str),
 and an optional `providers` filter
