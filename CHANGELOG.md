@@ -43,9 +43,26 @@ small additions ship as patch releases (`0.3.x`); new skills ship as minor relea
 - `geo_track` now stamps each snapshot with the current git commit (`commit`
   field), enabling the Diff Bot's commit correlation. Null outside a git repo
   (the Diff Bot degrades gracefully to a diff-only report).
-- `CHANGELOG.md` (this file) — reconstructed history from `v0.1.1` onward.
+
+### Documentation
+
+- **Adopter onboarding path** — `QUICKSTART.md` (five-minute path from install to
+  first audit), `skills/REGISTRY.md` (the one-line-per-skill index), and
+  `MCP_SERVERS.md` (bundled-tool navigator). Marketplace + README repointed at
+  them (#6).
+- **Per-skill adopter READMEs** — a short "what this does / when it fires" README
+  in each core skill directory so the plugin reads well browsed straight on
+  GitHub, not just through the meta-router (#7, #8, #9).
+- `CHANGELOG.md` (this file) — reconstructed history from `v0.1.0` onward.
 - `CONTRIBUTING.md` — the skill-contribution path, repo layout, validation
   expectations, and PR conventions.
+
+### Tests
+
+- Unit tests for the `seo-decay-check` hook scripts (`test/decay-check.test.js`),
+  wired into CI (#10).
+- Unit tests for `scripts/psi-quick.py`'s pure functions
+  (`test/test_psi_quick.py`), wired into CI (#11).
 
 ## [0.3.1] — 2026-05-12
 
