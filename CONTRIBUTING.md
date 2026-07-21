@@ -15,7 +15,7 @@ this file. Maintainer-only dogfood + release notes live in
 A new skill must:
 
 1. **Auto-trigger on a real builder scenario** the existing skills don't already
-   cover. The 14-skill registry (see [README.md](README.md#skills-included-14-total--full-registry-shipped))
+   cover. The 16-skill registry (see [README.md](README.md#skills-included-16-total--full-registry-shipped))
    is fairly complete — so a new skill should fill a genuine gap, not overlap an
    existing one.
 2. **Run on free-tier APIs only.** No DataForSEO, no Ahrefs/Surfer/Semrush, no
