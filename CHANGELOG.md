@@ -12,6 +12,11 @@ small additions ship as patch releases (`0.3.x`); new skills ship as minor relea
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-07-23
+
+Makes the checks that gate routing executable, and closes a hole in the AI-citation
+promise. Findings from the four-site dogfood pass in `DOGFOOD-2026-07-23.md`.
+
 ### Added
 
 - **Executable framework detection** (`scripts/detect-framework.js`) — `seo-bootstrap`

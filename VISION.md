@@ -26,6 +26,8 @@
 
 **v0.3.1 patch (2026-05-12)** — dogfood findings against vibecrafting.ai shipped: no-OAuth `/seo audit <url>` quick path (No-MCP fallback), `scripts/psi-quick.py` for CWV without `lighthouse-mcp`, `templates/robots-ai-bots.txt` paste-ready AI-bot stanza, Pass A "already-healthy" branch in meta-router, `DEVELOPING.md` for dogfood mode, `SEO_AUDIT_OUTPUT` env var documented. Rationale: `DOGFOOD-2026-05-12.md`.
 
+
+**v0.4.0 minor (2026-07-23)** — second dogfood pass, four production sites (`DOGFOOD-2026-07-23.md`). Shipped: `scripts/baseline-check.js` — Pass A is now a deterministic script rather than a prose tally gating the router; real robots.txt group resolution, route carried in the exit code, 54 unit tests. `OAI-SearchBot` added across template and skills — it governs ChatGPT Search citation and was absent repo-wide, the load-bearing omission for a GEO plugin. `templates/robots-ai-bots.txt` regrouped by crawler job (retrieval / user / training). Corrected the sitemap size limit (50,000 URLs / 50 MB; 500 KiB is the robots.txt cap). `psi-quick.py` now accepts `PAGESPEED_API_KEY` as well as `PSI_API_KEY`. Skill count 16; prior releases' brief-to-PR flow and GEO Diff Bot refiled from Fixed to Added in the changelog.
 ## v1 — shipped
 
 - Plugin scaffold (`.claude-plugin/plugin.json`, `marketplace.json`)

@@ -1,6 +1,6 @@
 # seo-superpower
 
-![version](https://img.shields.io/badge/version-0.3.1-blue) ![license](https://img.shields.io/badge/license-MIT-green) ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A4FFF) ![skills](https://img.shields.io/badge/skills-16-orange)
+![version](https://img.shields.io/badge/version-0.4.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A4FFF) ![skills](https://img.shields.io/badge/skills-16-orange)
 
 **End-to-end SEO + Generative Engine Optimization for technical builders. One command. Free-tier only.**
 
@@ -20,7 +20,7 @@ A [Claude Code](https://claude.com/claude-code) plugin that turns SEO from "thin
 That's it. After setup, just type `/seo`. The plugin figures out your site's lifecycle phase (just shipped? indexed but stalled? mature and decaying?), runs the right diagnostic in parallel, and routes you to the right action — usually a PR.
 
 **Get started:** [QUICKSTART.md](QUICKSTART.md) — the exact prompts to type in 5 minutes.
-**Reference:** [skills/REGISTRY.md](skills/REGISTRY.md) (all 15 skills) · [MCP_SERVERS.md](MCP_SERVERS.md) (the bundled tools).
+**Reference:** [skills/REGISTRY.md](skills/REGISTRY.md) (all 16 skills) · [MCP_SERVERS.md](MCP_SERVERS.md) (the bundled tools).
 
 ---
 
