@@ -1,0 +1,8 @@
+# templates/sveltekit/robots.txt -> copy to static/robots.txt
+# SvelteKit serves static/ at the site root, so this lands at /robots.txt.
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+Sitemap: https://REPLACE-WITH-CANONICAL-ORIGIN/sitemap.xml

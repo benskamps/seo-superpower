@@ -1,0 +1,6 @@
+{
+  "name": "astro-complete-fixture",
+  "private": true,
+  "type": "module",
+  "dependencies": { "astro": "^5.2.0", "@astrojs/sitemap": "^3.2.0" }
+}

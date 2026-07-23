@@ -1,0 +1,8 @@
+# templates/astro/robots.txt -> copy to public/robots.txt
+# Default-allow. Blocking /_astro/ or /assets/ breaks rendering for Googlebot.
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+Sitemap: https://REPLACE-WITH-CANONICAL-ORIGIN/sitemap-index.xml

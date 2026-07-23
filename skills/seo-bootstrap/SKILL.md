@@ -24,39 +24,52 @@ This skill ships the four files that move a site from "invisible" to "indexable"
 
 ---
 
-## Step 1 — Detect framework
+## Step 1 + 2 — Detect framework and audit current state
 
-Read `package.json` and check folder structure:
+**Run the detector. Do not eyeball this.**
 
-| Signal | Framework |
-|---|---|
-| `"next"` in deps + `app/` folder | **Next.js App Router** (default 2026 path) |
-| `"next"` in deps + `pages/` folder only | **Next.js Pages Router** |
-| `"astro"` in deps | **Astro** |
-| `"@sveltejs/kit"` in deps | **SvelteKit** |
-| `"react-router-dom"` only | Vite + RR — fall back to static `public/` files |
+```bash
+node scripts/detect-framework.js .          # human-readable report
+node scripts/detect-framework.js . --json   # same facts as JSON
+```
 
-Also note: `"site"` field in `astro.config.*`, `kit.paths` in `svelte.config.js`, `metadataBase` in `next.config.*`. You need the canonical site URL for every template — if missing, **ask the user once** before generating.
+It reads `package.json` plus the folder shape, and returns the framework, the
+template directory to use, the canonical site URL (and where it came from), and a
+present/missing verdict for all four assets at framework-idiomatic paths. Exit `0`
+= framework detected, `1` = unknown, `2` = bad path.
 
-## Step 2 — Audit current state
+Show the user the report table before writing anything.
 
-Check for each of these. Report present vs missing as a table before writing anything:
+| `framework` | Meaning | `templates` |
+|---|---|---|
+| `nextjs-app` | `next` in deps + `app/` (wins if both routers present) | `templates/nextjs/` |
+| `nextjs-pages` | `next` in deps + `pages/` only | `templates/nextjs/` (see `pages-router-notes.md`) |
+| `astro` | `astro` in deps | `templates/astro/` |
+| `sveltekit` | `@sveltejs/kit` in deps (dev or prod) | `templates/sveltekit/` |
+| `vite-react-router` | `react-router-dom`, no meta-framework | none — static `public/` files |
+| `unknown` | no `package.json`, or no supported framework | none — ask the user |
 
-| Asset | Next.js (App) | Astro | SvelteKit |
-|---|---|---|---|
-| Sitemap | `app/sitemap.ts` or `app/sitemap.xml` | `@astrojs/sitemap` in config or `src/pages/sitemap.xml.ts` | `src/routes/sitemap.xml/+server.ts` |
-| Robots | `app/robots.ts` or `public/robots.txt` | `public/robots.txt` | `static/robots.txt` |
-| OG image | `app/opengraph-image.{tsx,png}` | `public/og.png` | `static/og.png` |
-| JSON-LD | `<script type="application/ld+json">` in root layout | same in `Layout.astro` | same in `+layout.svelte` |
-| `<title>` + meta description | `metadata` export or `<Head>` | frontmatter or layout | `<svelte:head>` |
+**The canonical site URL is a hard gate.** The detector reports it from `site:`
+(`astro.config.*`), `metadataBase` (`next.config.*` / `app/layout.*`), or
+`PUBLIC_SITE_URL` (`svelte.config.*`). If it comes back `null`, **ask the user
+once** and do not generate until you have it — without it every sitemap and
+canonical URL renders relative and Google rejects the file.
 
-Also confirm `metadataBase` (Next), `site` (Astro), or canonical URL (SvelteKit) is set. Without it, sitemap URLs will be relative and Google will reject the file.
+If `missing` comes back empty, stop: the site is already bootstrapped. Route to
+`auditing-technical-seo` instead.
+
+Detection lives in code, not in this table, so it is unit-tested against real
+project fixtures (`fixtures/`, `test/detect-framework.test.js`) and cannot drift
+from what the templates actually support.
 
 ## Step 3 — Generate missing pieces
 
-Use the framework templates in `templates/{nextjs,astro,sveltekit}/`. Rules:
+Use the framework templates in `templates/{nextjs,astro,sveltekit}/` — the
+detector's `templates` field names the right one. Each directory has a README
+mapping template file to destination path. Rules:
 
 - Only write files the audit flagged missing. Never overwrite.
+- Substitute every `REPLACE-WITH-*` token before committing. A shipped `REPLACE-WITH-CANONICAL-ORIGIN` is worse than no sitemap.
 - Wire imports: for Next, the metadata files are zero-config. For Astro, add `@astrojs/sitemap` to `astro.config.*` and run `npm install`. For SvelteKit, the `+server.ts` is auto-routed.
 - JSON-LD goes in the root layout, **not per-page** at this stage. Per-page `Article`/`Product` schema is the next skill's job.
 - Ship as one commit: `feat(seo): bootstrap sitemap, robots, OG, and JSON-LD`. Then open one PR.

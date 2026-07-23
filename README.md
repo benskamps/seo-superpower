@@ -34,7 +34,7 @@ Other Claude SEO tools require paid APIs (DataForSEO, $60+/mo). The SaaS giants 
 
 | Phase | Command | What ships |
 |---|---|---|
-| **Day 1** (just shipped) | `/seo bootstrap` | PR with sitemap, robots.txt, OG image, JSON-LD schema. Framework auto-detected (Next.js / Astro / SvelteKit). |
+| **Day 1** (just shipped) | `/seo bootstrap` | PR with sitemap, robots.txt, OG image, JSON-LD schema. Framework auto-detected — see [supported frameworks](#supported-frameworks). |
 | **Week 1** (pre-rankings) | `/seo audit` | Prioritized fix list ranked by traffic-impact × fix-effort. Lighthouse + indexability + schema. |
 | **Month 2+** (have GSC data) | `/seo underserved` | Striking-distance keyword opportunities you already rank for, pulled from your GSC. |
 | **Growth** (writing new) | `/seo brief "<topic>"` | Research-grounded content brief (keyword+intent, striking-distance angle, headline moat, entities/PAA, internal links, word-count target) **plus a draft file, opened as a PR**. Brief to merged PR. |
@@ -43,6 +43,33 @@ Other Claude SEO tools require paid APIs (DataForSEO, $60+/mo). The SaaS giants 
 | **Always-on** | `/seo geo-diff` | Diffs two citation snapshots and ties each gained/lost citation to the commit that caused it — or flags it as an external shift. |
 
 Or just run `/seo` with no argument. It diagnoses your phase and picks for you.
+
+## Supported frameworks
+
+`/seo bootstrap` detects your framework with `scripts/detect-framework.js` — real code,
+unit-tested against project fixtures, not a prose table a model eyeballs. Run it directly
+any time:
+
+```bash
+node scripts/detect-framework.js .          # report
+node scripts/detect-framework.js . --json   # machine-readable
+```
+
+| Framework | Detected from | Templates shipped |
+|---|---|---|
+| **Next.js** (App Router) | `next` + `app/` | `app/sitemap.ts`, `app/robots.ts`, `app/opengraph-image.tsx`, `metadataBase` + JSON-LD layout |
+| **Next.js** (Pages Router) | `next` + `pages/` only | Documented deltas (`getServerSideProps` sitemap, static robots/OG) |
+| **Astro** | `astro` | `@astrojs/sitemap` config, `public/robots.txt`, `SeoHead.astro` |
+| **SvelteKit** | `@sveltejs/kit` (dep or devDep) | `src/routes/sitemap.xml/+server.ts`, `static/robots.txt`, `<svelte:head>` SEO block |
+| **Vite + React Router** | `react-router-dom`, no meta-framework | No templates — falls back to static files in `public/` |
+
+Monorepos are handled: if the root `package.json` has no framework, the detector searches
+conventional app directories (`web/`, `apps/*`, `site/`, …) two levels deep, skipping
+`node_modules/` and build output, and reports which subdirectory it used.
+
+**Not detected:** Nuxt, Remix/React Router 7 framework mode, SolidStart, Eleventy, Hugo,
+Jekyll, and hand-rolled static sites with no `package.json`. These report `unknown` and the
+skill falls back to asking you where things go — it will not guess. PRs welcome.
 
 ## Skills included (16 total — full registry shipped)
 

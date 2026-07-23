@@ -1,0 +1,59 @@
+---
+// templates/astro/SeoHead.astro -> copy to src/components/SeoHead.astro
+// Then render <SeoHead ... /> inside the <head> of src/layouts/Layout.astro.
+//
+// Astro has no metadata API: canonical, OG and JSON-LD are all plain tags, so
+// they belong in one component rather than being copy-pasted per page.
+interface Props {
+  title: string;
+  description: string;
+  /** Site-wide canonical origin. Must match `site` in astro.config.*. */
+  siteName?: string;
+  image?: string;
+}
+
+const { title, description, siteName = "REPLACE-WITH-SITE-NAME", image = "/og.png" } = Astro.props;
+
+// Astro.site comes from `site:` in astro.config.* — the single source of truth.
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL(image, Astro.site);
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${Astro.site}#organization`,
+      name: siteName,
+      url: Astro.site?.toString(),
+      logo: new URL("/og.png", Astro.site).toString(),
+    },
+    {
+      // "WebSite" — capital S. schema.org is case-sensitive and validators
+      // silently drop "Website".
+      "@type": "WebSite",
+      "@id": `${Astro.site}#website`,
+      name: siteName,
+      url: Astro.site?.toString(),
+      publisher: { "@id": `${Astro.site}#organization` },
+    },
+  ],
+};
+---
+<title>{title}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+
+<meta property="og:type" content="website" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={ogImage} />
+<meta property="og:site_name" content={siteName} />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage} />
+
+<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
