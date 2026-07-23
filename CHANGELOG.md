@@ -14,6 +14,42 @@ small additions ship as patch releases (`0.3.x`); new skills ship as minor relea
 
 ### Added
 
+- **Executable framework detection** (`scripts/detect-framework.js`) — `seo-bootstrap`
+  Steps 1–2 were a prose table a model eyeballed; they are now one deterministic,
+  stdlib-only script that reports the framework, the template directory, the canonical
+  site URL (and where it came from), and a present/missing verdict for sitemap, robots,
+  OG image and JSON-LD at framework-idiomatic paths. Supports Next.js App Router,
+  Next.js Pages Router, Astro, SvelteKit, and a Vite + React Router static fallback;
+  exits `0`/`1`/`2` and speaks `--json`. Unit-tested against real project fixtures
+  (`fixtures/`, `test/detect-framework.test.js`, 41 tests) so detection can no longer
+  drift from what the templates actually support.
+- **Monorepo support in detection** — when the root `package.json` has no framework, the
+  detector searches conventional app directories (`web/`, `apps/*`, `site/`, …) two levels
+  deep, skipping `node_modules/` and build output, and reports `detectedIn`. Found by
+  dogfooding: a real repo whose Next app lives in `web/` previously reported `unknown` and
+  silently downgraded the user to the static fallback.
+- **`templates/nextjs/`, `templates/astro/`, `templates/sveltekit/`** — the framework
+  templates `seo-bootstrap` Step 3 has instructed users to copy since the initial commit.
+  They had never actually been written; `templates/` contained one unrelated file. Each
+  directory ships its files plus a README mapping template to destination path.
+- **`README.md` → "Supported frameworks"** — an honest matrix of what is detected, what
+  templates ship per framework, and an explicit not-detected list (Nuxt, Remix, SolidStart,
+  Eleventy, Hugo, Jekyll, `package.json`-less static sites).
+
+### Fixed
+
+- **Dangling template references shipped silently for months.** `scripts/ci-validate.py`
+  advertised a "no dangling references" smoke test but only ever read manifests, commands
+  and hook configs — never a `SKILL.md` body, which is the text users actually execute. It
+  now resolves in-repo paths referenced from skill bodies (including brace sets like
+  `templates/{nextjs,astro,sveltekit}/`) and fails on any that are missing or empty.
+  67 → 74 checks.
+- **`metadataBase` could resolve to the wrong origin.** Detection originally scanned
+  forward from the word `metadataBase` for the next URL in the file, which on a real repo
+  returned a `nextjs.org` docs link sitting in a comment. It now parses the two real shapes
+  (`new URL("literal")` and `new URL(IDENT)` resolved against a same-file `const`) and
+  reports `null` otherwise, so the skill asks rather than ships a wrong canonical.
+
 - **Brief-to-PR flow** (`scripts/brief-assembly.js`) + `generating-content-briefs`
   skill — the `/seo brief "<topic>"` moat. Turns a topic (+ optional keyword/URL)
   into a research-grounded `CONTENT_BRIEF.md` (target keyword + intent, the

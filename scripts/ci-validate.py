@@ -255,6 +255,57 @@ for hf in hook_files:
             continue  # nothing local to resolve
         check((ROOT / target).exists(), f"{rel}: hook script '{target}' exists")
 
+# 5f. Paths referenced from SKILL.md *bodies* exist.
+#
+# Every reference check above reads a manifest, a command, or a hook config —
+# never the instructions a user actually executes. That is why
+# `skills/seo-bootstrap/SKILL.md` Step 3 could say "use the framework templates
+# in `templates/{nextjs,astro,sveltekit}/`" for months while none of those
+# directories existed. Green CI was measuring the wrong surface.
+#
+# Two shapes are resolved:
+#   - brace sets:  `templates/{nextjs,astro,sveltekit}/`  -> one check per member
+#   - plain paths: `templates/astro/robots.txt`, `scripts/detect-framework.js`
+#
+# Only in-repo top-level directories are considered, so prose about a *user's*
+# project (`app/sitemap.ts`, `src/pages/`, `public/robots.txt`) is not flagged.
+IN_REPO_ROOTS = ("templates/", "scripts/", "skills/", "hooks/", "commands/", "mcp-servers/", "fixtures/")
+BRACE_REF_RE = re.compile(r"`([A-Za-z0-9_./-]*?)\{([A-Za-z0-9_,-]+)\}([A-Za-z0-9_./-]*)`")
+PLAIN_REF_RE = re.compile(r"`((?:" + "|".join(re.escape(r) for r in IN_REPO_ROOTS) + r")[A-Za-z0-9_./-]*)`")
+
+
+def expand_refs(text: str) -> set[str]:
+    """Collect in-repo paths referenced from a markdown body, brace sets expanded."""
+    refs: set[str] = set()
+    for prefix, members, suffix in BRACE_REF_RE.findall(text):
+        if not prefix.startswith(IN_REPO_ROOTS):
+            continue
+        for member in members.split(","):
+            member = member.strip()
+            if member:
+                refs.add(f"{prefix}{member}{suffix}".rstrip("/"))
+    for ref in PLAIN_REF_RE.findall(text):
+        # A brace-set match also matches PLAIN_REF_RE's prefix; skip bare dirs
+        # that are just the bucket itself (e.g. `templates/`).
+        cleaned = ref.rstrip("/")
+        if cleaned and cleaned.count("/") >= 1:
+            refs.add(cleaned)
+    return refs
+
+
+print("SKILL.md body references (no dangling references):")
+for sf in skill_files:
+    rel = sf.relative_to(ROOT).as_posix()
+    body = sf.read_text(encoding="utf-8")
+    for ref in sorted(expand_refs(body)):
+        target = ROOT / ref
+        ok = target.exists()
+        # A referenced directory that exists but is empty is still a dead end
+        # for the model following the instruction.
+        if ok and target.is_dir():
+            ok = any(target.iterdir())
+        check(ok, f"{rel}: referenced '{ref}' exists and is non-empty")
+
 # ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------

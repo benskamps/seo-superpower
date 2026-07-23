@@ -1,0 +1,5 @@
+{
+  "name": "monorepo-root-fixture",
+  "private": true,
+  "devDependencies": { "prettier": "^3.4.0" }
+}

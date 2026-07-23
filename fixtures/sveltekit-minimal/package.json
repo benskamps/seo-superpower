@@ -1,0 +1,6 @@
+{
+  "name": "sveltekit-minimal-fixture",
+  "private": true,
+  "type": "module",
+  "devDependencies": { "@sveltejs/kit": "^2.15.0", "svelte": "^5.0.0", "vite": "^6.0.0" }
+}

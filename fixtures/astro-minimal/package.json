@@ -1,0 +1,6 @@
+{
+  "name": "astro-minimal-fixture",
+  "private": true,
+  "type": "module",
+  "dependencies": { "astro": "^5.2.0" }
+}
