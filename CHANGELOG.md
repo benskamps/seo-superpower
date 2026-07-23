@@ -52,6 +52,36 @@ small additions ship as patch releases (`0.3.x`); new skills ship as minor relea
   `User-agent: *`; a permissive wildcard means allowed-by-luck, which breaks
   silently the day someone tightens it. Surfaced as its own block in the report.
 
+- **Brief-to-PR flow** (`scripts/brief-assembly.js`) + `generating-content-briefs`
+  skill — the `/seo brief "<topic>"` moat. Turns a topic (+ optional keyword/URL)
+  into a research-grounded `CONTENT_BRIEF.md` (target keyword + intent, the
+  striking-distance angle from your GSC, a headline moat of title + H2 outline
+  with 40–50 word AIO-answer stubs, entities/PAA questions, internal-link
+  suggestions ranked from your own repo content, and a competitor-median ±20%
+  word-count target) **plus a `draft: true` content file**, then prints the
+  draft-to-PR wiring (branch → commit → `gh pr create` with the brief as the PR
+  body). The brief ASSEMBLY is a pure, deterministic, fully unit-tested core
+  (`test/brief-assembly.test.js`, 31 tests incl. a real temp-dir content scan);
+  the live GSC/SERP data and the draft's prose are documented seams (`--gsc`,
+  `--serp`, and the writer) — no LLM/network call in the deterministic core, so
+  green CI can't hide a stub. Reuses the `finding-underserved-keywords`
+  striking-distance method (in code) and composes `analyzing-content-gaps` for
+  the SERP diff. Routed via `/seo brief` (repointed from `analyzing-content-gaps`,
+  which stays reachable via `/seo gap`). Brings the shipped skill count to 16.
+- **GEO Diff Bot** (`scripts/geo-diff-bot.js`) + `tracking-citation-diffs` skill —
+  daily AI-citation diff correlated to the git commit that caused each change.
+  Diffs two `geo-check` snapshots into gained/lost/unchanged citations, then
+  git-blames the content files that changed in the window to attribute each
+  gained/lost citation to the content commit(s) that plausibly caused it — or
+  flags it `external` (model update / competitor / crawl refresh) when no
+  content changed in the repo. Pure, offline, deterministic engine (no LLM
+  calls); the live snapshot fetch remains the existing `geo_track` MCP tool.
+  Fully unit-tested (`test/geo-diff-bot.test.js`, incl. against a real temp
+  git repo). Routed via `/seo geo-diff`. Brings the shipped skill count to 15.
+- `geo_track` now stamps each snapshot with the current git commit (`commit`
+  field), enabling the Diff Bot's commit correlation. Null outside a git repo
+  (the Diff Bot degrades gracefully to a diff-only report).
+
 ### Fixed
 
 - **`OAI-SearchBot` was absent from the entire repository.** Per OpenAI's crawler
@@ -95,36 +125,6 @@ small additions ship as patch releases (`0.3.x`); new skills ship as minor relea
   returned a `nextjs.org` docs link sitting in a comment. It now parses the two real shapes
   (`new URL("literal")` and `new URL(IDENT)` resolved against a same-file `const`) and
   reports `null` otherwise, so the skill asks rather than ships a wrong canonical.
-
-- **Brief-to-PR flow** (`scripts/brief-assembly.js`) + `generating-content-briefs`
-  skill — the `/seo brief "<topic>"` moat. Turns a topic (+ optional keyword/URL)
-  into a research-grounded `CONTENT_BRIEF.md` (target keyword + intent, the
-  striking-distance angle from your GSC, a headline moat of title + H2 outline
-  with 40–50 word AIO-answer stubs, entities/PAA questions, internal-link
-  suggestions ranked from your own repo content, and a competitor-median ±20%
-  word-count target) **plus a `draft: true` content file**, then prints the
-  draft-to-PR wiring (branch → commit → `gh pr create` with the brief as the PR
-  body). The brief ASSEMBLY is a pure, deterministic, fully unit-tested core
-  (`test/brief-assembly.test.js`, 31 tests incl. a real temp-dir content scan);
-  the live GSC/SERP data and the draft's prose are documented seams (`--gsc`,
-  `--serp`, and the writer) — no LLM/network call in the deterministic core, so
-  green CI can't hide a stub. Reuses the `finding-underserved-keywords`
-  striking-distance method (in code) and composes `analyzing-content-gaps` for
-  the SERP diff. Routed via `/seo brief` (repointed from `analyzing-content-gaps`,
-  which stays reachable via `/seo gap`). Brings the shipped skill count to 16.
-- **GEO Diff Bot** (`scripts/geo-diff-bot.js`) + `tracking-citation-diffs` skill —
-  daily AI-citation diff correlated to the git commit that caused each change.
-  Diffs two `geo-check` snapshots into gained/lost/unchanged citations, then
-  git-blames the content files that changed in the window to attribute each
-  gained/lost citation to the content commit(s) that plausibly caused it — or
-  flags it `external` (model update / competitor / crawl refresh) when no
-  content changed in the repo. Pure, offline, deterministic engine (no LLM
-  calls); the live snapshot fetch remains the existing `geo_track` MCP tool.
-  Fully unit-tested (`test/geo-diff-bot.test.js`, incl. against a real temp
-  git repo). Routed via `/seo geo-diff`. Brings the shipped skill count to 15.
-- `geo_track` now stamps each snapshot with the current git commit (`commit`
-  field), enabling the Diff Bot's commit correlation. Null outside a git repo
-  (the Diff Bot degrades gracefully to a diff-only report).
 
 ### Documentation
 
