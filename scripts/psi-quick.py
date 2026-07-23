@@ -32,11 +32,24 @@ from typing import Any
 PSI_ENDPOINT = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
 
 
+# One key, historically two names. `PSI_API_KEY` is what this script has always
+# read and what the skills document; `PAGESPEED_API_KEY` is what `.mcp.json`
+# wires into the pagespeed MCP server. A user who followed MCP_SETUP.md and set
+# only the latter used to get a silent "CWV skipped" here, with nothing pointing
+# at why. Accept both, canonical name first.
+API_KEY_NAMES = ("PSI_API_KEY", "PAGESPEED_API_KEY")
+
+
 def load_api_key() -> str | None:
-    """Look up PSI_API_KEY in env, then the .env files (default path first)."""
-    key = os.environ.get("PSI_API_KEY")
-    if key:
-        return key.strip()
+    """Look up the PSI key in env, then the .env files (default path first).
+
+    Accepts either PSI_API_KEY (canonical) or PAGESPEED_API_KEY (the name
+    .mcp.json uses), so the two setup paths cannot disagree.
+    """
+    for name in API_KEY_NAMES:
+        key = os.environ.get(name)
+        if key and key.strip():
+            return key.strip()
 
     # Documented default first, then ~/.openclaw/.env as a silent fallback.
     env_paths = [
@@ -51,11 +64,12 @@ def load_api_key() -> str | None:
                 line = line.strip()
                 if not line or line.startswith("#"):
                     continue
-                if line.startswith("PSI_API_KEY"):
-                    _, _, val = line.partition("=")
-                    val = val.strip().strip("'\"")
-                    if val:
-                        return val
+                for name in API_KEY_NAMES:
+                    if line.startswith(name):
+                        _, _, val = line.partition("=")
+                        val = val.strip().strip("'\"")
+                        if val:
+                            return val
         except OSError:
             pass
     return None

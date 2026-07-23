@@ -4,56 +4,96 @@
 # explicit allow/block per AI crawler — the auditing-technical-seo skill
 # flags "absence as the bug." Both allow and block are valid choices.
 #
-# Source policy: extracted from vibecrafting.ai (in production 2026-05).
+# Grouped by JOB, not by vendor, because the job is what decides whether
+# blocking a bot costs you citations:
+#
+#   RETRIEVAL — builds the index an assistant cites from. Block one of these
+#               and you disappear from that engine's answers. This is the
+#               tier that pays.
+#   USER      — fires when a human asks the assistant to open your page.
+#               Blocking breaks "summarize this link" for your own visitors.
+#   TRAINING  — bulk corpus collection for model training. Blocking these
+#               costs you nothing in citations. Opt out freely if you want to.
+#
+# Verify against each vendor's published list before trusting any third-party
+# roster — including this one. Tokens change.
+#
 # Pairs with: optimizing-for-generative-engines (the GEO skill).
+# Check your live policy with: node scripts/baseline-check.js <your-url>
 
-# --- OpenAI ---
-User-Agent: GPTBot
+
+# ═══ RETRIEVAL — the citation tier. Allow these unless you have a reason. ═══
+
+# OpenAI. Surfaces sites in ChatGPT's search features. Per OpenAI's crawler
+# docs, sites that block OAI-SearchBot "will not be shown in ChatGPT search
+# answers." GPTBot is NOT a substitute — that one is training-only.
+User-Agent: OAI-SearchBot
 Allow: /
+
+# Anthropic. Builds the search index behind Claude's web results.
+User-Agent: Claude-SearchBot
+Allow: /
+
+# Perplexity.
+User-Agent: PerplexityBot
+Allow: /
+
+
+# ═══ USER — live, human-initiated fetches ═══
 
 User-Agent: ChatGPT-User
-Allow: /
-
-# --- Anthropic ---
-User-Agent: ClaudeBot
 Allow: /
 
 User-Agent: Claude-User
 Allow: /
 
-User-Agent: Claude-SearchBot
+User-Agent: Perplexity-User
 Allow: /
 
-User-Agent: anthropic-ai
+
+# ═══ TRAINING — corpus collection. Blocking costs no citations. ═══
+
+# OpenAI training crawler.
+User-Agent: GPTBot
 Allow: /
 
-# --- Perplexity ---
-User-Agent: PerplexityBot
+# Anthropic training crawler.
+User-Agent: ClaudeBot
 Allow: /
 
-# --- Google (AI-search opt-in, separate from Googlebot) ---
-User-Agent: Google-Extended
-Allow: /
-
-# --- Common Crawl (used by many LLM training pipelines) ---
+# Common Crawl — feeds many third-party LLM training pipelines.
 User-Agent: CCBot
 Allow: /
 
-# --- Apple (AI training opt-in, separate from Applebot) ---
+# Google AI training opt-out token. INDEPENDENT of Googlebot: setting this to
+# Disallow does not affect classic Google Search ranking. Note this is a
+# control token, not a crawler — no bot fetches under this name.
+User-Agent: Google-Extended
+Allow: /
+
+# Apple AI training opt-out token. INDEPENDENT of Applebot. Also a control
+# token rather than a crawler.
 User-Agent: Applebot-Extended
 Allow: /
 
-# --- ByteDance (commonly blocked by US/EU sites for abuse) ---
+
+# ═══ Blocked by default ═══
+
+# ByteDance. Commonly blocked by US/EU sites for aggressive crawl behaviour.
 User-Agent: Bytespider
 Disallow: /
 
+
 # Notes:
-#  • Replace each `Allow: /` with `Disallow: /` (or `Disallow: /private/`)
-#    if you want to opt OUT of training/citation for that crawler.
-#  • Google-Extended is INDEPENDENT of Googlebot. Blocking Google-Extended
-#    does not affect classic Google Search ranking — only AI Overviews
-#    and Bard/Gemini training.
-#  • Applebot-Extended is INDEPENDENT of Applebot. Same logic.
+#  • Replace any `Allow: /` with `Disallow: /` (or `Disallow: /private/`) to
+#    opt OUT for that crawler. Blocking the TRAINING tier costs no citations;
+#    blocking the RETRIEVAL tier removes you from that engine's answers.
+#  • An AI crawler you do NOT name inherits your `User-Agent: *` group. If that
+#    group is permissive you are allowed by luck, not by policy — and it breaks
+#    silently the day someone tightens the wildcard. Name them explicitly.
 #  • These stanzas are additive. Keep your `User-Agent: *` block above.
+#  • `anthropic-ai` and `Claude-Web` are legacy tokens Anthropic has superseded
+#    with the ClaudeBot / Claude-User / Claude-SearchBot split. Harmless to
+#    keep for older caches; not worth adding fresh.
 #  • Don't forget the `Sitemap:` line at the bottom of the file:
 #      Sitemap: https://yourdomain.com/sitemap.xml

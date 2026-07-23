@@ -36,19 +36,21 @@ small additions ship as patch releases (`0.3.x`); new skills ship as minor relea
   templates ship per framework, and an explicit not-detected list (Nuxt, Remix, SolidStart,
   Eleventy, Hugo, Jekyll, `package.json`-less static sites).
 
-### Fixed
-
-- **Dangling template references shipped silently for months.** `scripts/ci-validate.py`
-  advertised a "no dangling references" smoke test but only ever read manifests, commands
-  and hook configs — never a `SKILL.md` body, which is the text users actually execute. It
-  now resolves in-repo paths referenced from skill bodies (including brace sets like
-  `templates/{nextjs,astro,sveltekit}/`) and fails on any that are missing or empty.
-  67 → 74 checks.
-- **`metadataBase` could resolve to the wrong origin.** Detection originally scanned
-  forward from the word `metadataBase` for the next URL in the file, which on a real repo
-  returned a `nextjs.org` docs link sitting in a comment. It now parses the two real shapes
-  (`new URL("literal")` and `new URL(IDENT)` resolved against a same-file `const`) and
-  reports `null` otherwise, so the skill asks rather than ships a wrong canonical.
+- **Executable Pass A** (`scripts/baseline-check.js`) — the meta-router's 10-point
+  baseline health check was a prose checklist whose *tally* gated a branch
+  ("≥8/10 → skip bootstrap, route to growth"). Ten fuzzy conditions counted by a
+  model, driving a routing decision. It is now one deterministic, stdlib-only
+  script: fetches `/`, `/robots.txt` and the declared sitemap, parses head tags
+  and JSON-LD (counting blocks that actually *parse*, not merely appear),
+  resolves robots.txt groups per spec (most-specific agent, longest-path rule,
+  Allow wins ties), scores Pass A, and returns the route in its exit code
+  (`0` healthy / `1` incomplete / `2` unfetchable). Speaks `--json`.
+  54 unit tests, all hermetic — no network in CI.
+- **AI *citation* readiness, distinct from AI-bot naming** — `baseline-check.js`
+  reports whether retrieval crawlers can *effectively* reach a site rather than
+  whether their names appear in `robots.txt`. An unnamed bot inherits
+  `User-agent: *`; a permissive wildcard means allowed-by-luck, which breaks
+  silently the day someone tightens it. Surfaced as its own block in the report.
 
 - **Brief-to-PR flow** (`scripts/brief-assembly.js`) + `generating-content-briefs`
   skill — the `/seo brief "<topic>"` moat. Turns a topic (+ optional keyword/URL)
@@ -79,6 +81,50 @@ small additions ship as patch releases (`0.3.x`); new skills ship as minor relea
 - `geo_track` now stamps each snapshot with the current git commit (`commit`
   field), enabling the Diff Bot's commit correlation. Null outside a git repo
   (the Diff Bot degrades gracefully to a diff-only report).
+
+### Fixed
+
+- **`OAI-SearchBot` was absent from the entire repository.** Per OpenAI's crawler
+  docs it "is used to surface websites in search results in ChatGPT's search
+  features," and sites blocking it "will not be shown in ChatGPT search answers."
+  `templates/robots-ai-bots.txt` shipped `GPTBot` (training-only) and
+  `ChatGPT-User` but not the search bot — two of OpenAI's three tokens — while
+  giving Anthropic's three-bot split full coverage. For a plugin whose headline
+  promise is AI citation, this was the load-bearing omission. The template is now
+  grouped by crawler **job** (retrieval / user / training) rather than by vendor,
+  because the job determines whether blocking costs citations; `OAI-SearchBot`
+  and `Perplexity-User` added, legacy `anthropic-ai` demoted to a note.
+  Found by dogfooding: all three healthy sites in `DOGFOOD-2026-07-23.md` had
+  the same hole in production.
+- **Sitemap size limit was ~100× too strict.** `auditing-technical-seo` checked
+  "sitemap < 500 KiB (Google's hard cap)" in two places. 500 KiB is the
+  **robots.txt** parse cap; a single sitemap's limits are 50,000 URLs / 50 MB
+  uncompressed. The skill's own `SOURCES.md` had both facts right and separate,
+  and `generating-programmatic-seo` stated the correct limit — the plugin
+  contradicted itself, with the wrong number in the path that runs on every
+  audited site. Corrected in both places and locked by a regression test
+  asserting a 600 KiB sitemap is legal and the two constants differ.
+- **One PSI key, two names.** `scripts/psi-quick.py` read `PSI_API_KEY` while
+  `.mcp.json` wired `PAGESPEED_API_KEY`; a user who followed `MCP_SETUP.md` and
+  set only the latter got a silent "CWV skipped" with nothing explaining why.
+  `load_api_key()` now accepts either, canonical name first, in both env and
+  `.env` lookup.
+- **Router no longer treats an 8/10 as unqualified good news.** All ten Pass A
+  checks weigh one point, but a missing canonical and a missing AI-bot policy
+  are not worth the same as a duplicate `<h1>`. The threshold is unchanged (a
+  product decision, not a bug), but the skill now requires naming those two
+  misses plainly instead of burying them in a cleanup bullet.
+- **Dangling template references shipped silently for months.** `scripts/ci-validate.py`
+  advertised a "no dangling references" smoke test but only ever read manifests, commands
+  and hook configs — never a `SKILL.md` body, which is the text users actually execute. It
+  now resolves in-repo paths referenced from skill bodies (including brace sets like
+  `templates/{nextjs,astro,sveltekit}/`) and fails on any that are missing or empty.
+  67 → 74 checks.
+- **`metadataBase` could resolve to the wrong origin.** Detection originally scanned
+  forward from the word `metadataBase` for the next URL in the file, which on a real repo
+  returned a `nextjs.org` docs link sitting in a comment. It now parses the two real shapes
+  (`new URL("literal")` and `new URL(IDENT)` resolved against a same-file `const`) and
+  reports `null` otherwise, so the skill asks rather than ships a wrong canonical.
 
 ### Documentation
 

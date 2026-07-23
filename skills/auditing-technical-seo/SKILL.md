@@ -11,7 +11,7 @@ Technical SEO is the foundation. Content strategy, keyword work, and link buildi
 
 ## What this skill checks
 
-- **Crawlability:** `robots.txt` parses cleanly, no accidental site-wide `Disallow: /`, sitemap referenced as absolute URL, sitemap reachable and valid, file under 500 KiB (Google's hard cap) [6][7].
+- **Crawlability:** `robots.txt` parses cleanly and stays under Google's 500 KiB parse cap (bytes past it are ignored) [6]; no accidental site-wide `Disallow: /`; sitemap referenced as an absolute URL, reachable, valid, and within the single-sitemap limits of **50,000 URLs / 50 MB uncompressed** — split into a sitemap index above either [7]. Run `node scripts/baseline-check.js <url>` rather than eyeballing these.
 - **Indexability:** GSC index coverage cross-referenced via `gsc-mcp`, canonical tags consistent and self-referential where appropriate, hreflang correct on i18n sites, no duplicate content via tracking parameters, no `noindex` on pages that should rank [5].
 - **Rendering:** SSR/SSG vs CSR-only routes (CSR-only pages are largely invisible to GPTBot/ClaudeBot/PerplexityBot, which do not execute JS reliably), critical content not hidden behind hydration [2][3].
 - **Core Web Vitals:** LCP, INP, CLS, TTFB measured at p75 via `lighthouse-mcp` (PageSpeed Insights / CrUX field data) [1].
@@ -37,23 +37,25 @@ When `lighthouse-mcp` and `gsc-mcp` aren't configured (user hasn't run `/seo-set
 
 **What to do:**
 
-1. **Fetch static resources** via `curl` / HTTP GET (no auth):
-   - `GET /robots.txt` — check 200, non-empty, `Sitemap:` line present, AI-bot stanza (GPTBot / ClaudeBot / Claude-SearchBot / PerplexityBot / Google-Extended named — allow or disallow, just named).
-   - `GET /sitemap.xml` — check 200, parses as XML, >0 URLs, file <500 KiB.
-   - `GET /` (homepage) plus 2 inner pages discovered from the sitemap (a content page + a category/listing page if present).
+1. **Run `scripts/baseline-check.js`** (`node scripts/baseline-check.js <url>`) — this does the whole static pass deterministically (fetches `/`, `/robots.txt`, and the declared sitemap; parses head tags and JSON-LD; resolves robots.txt groups; scores Pass A out of 10; emits a route). Use `--json` to consume the result. Do **not** hand-tally these checks; the script exists because the tally gates the router.
 
-2. **Parse head tags** on each fetched page:
-   - `<title>` present, length 50–60 chars ideal.
-   - `<meta name="description">` present, length 150–160 chars ideal.
-   - `<link rel="canonical">` present, self-referential or sensible.
-   - `<meta name="viewport">` present.
-   - `<script type="application/ld+json">` count ≥ 1, JSON parses without error.
-   - Exactly one `<h1>` per page.
-   - `<meta name="robots">` not `noindex` on pages that should rank.
+   What it checks, for reference:
+   - `GET /robots.txt` — 200, non-empty, `Sitemap:` line present, under the 500 KiB parse cap [6], explicit policy on ≥3 AI crawlers.
+   - `GET <declared sitemap>` — 200, parses as sitemap XML, >0 URLs, within 50,000 URLs / 50 MB [7].
+   - `GET /` — title, meta description, canonical, viewport, valid JSON-LD, single `<h1>`, no stray `noindex`.
 
-3. **AI-bot readiness check** — `robots.txt` mentions at least three of: `GPTBot`, `ClaudeBot`, `Claude-SearchBot`, `PerplexityBot`, `Google-Extended`. Absence is the bug, not the directive — both `Allow:` and `Disallow:` are valid choices. If missing, reference `templates/robots-ai-bots.txt` as a paste-ready starting point.
+   Then fetch 2 inner pages discovered from the sitemap (a content page + a category/listing page if present) and repeat the head-tag checks on them.
 
-4. **Core Web Vitals** — if `PSI_API_KEY` is set in env (or `~/.config/seo-superpower/.env`), call `scripts/psi-quick.py <url>` (CrUX field data preferred, lab fallback flagged). If no key, **skip CWV** and note it in the output rather than guessing.
+2. **Judge head-tag quality.** The script reports presence and length; you judge fit. `<title>` 50–60 chars, `<meta name="description">` 150–160 chars, canonical self-referential or sensibly cross-referential, no `noindex` on a page that should rank. Presence is mechanical (scored); *quality* is the part that needs a reader.
+
+3. **AI-bot readiness** — read the script's "AI citation readiness" block, which resolves robots.txt groups rather than grepping for names. Two distinct questions:
+
+   - **Citation (the one that pays):** can the *retrieval* crawlers reach you — `OAI-SearchBot`, `Claude-SearchBot`, `PerplexityBot`? Per OpenAI's crawler docs, sites that block `OAI-SearchBot` "will not be shown in ChatGPT search answers." Naming `GPTBot` does **not** cover this: GPTBot is training-only and has no bearing on citation. Missing a retrieval bot from `robots.txt` is not automatically a failure — an unnamed bot inherits `User-agent: *`, so a permissive wildcard still lets it through — but that is luck, not policy, and it breaks the moment someone tightens the wildcard. Recommend naming them explicitly.
+   - **Policy hygiene (the Pass A point):** an explicit stanza for ≥3 AI crawlers. Absence is the bug, not the directive — both `Allow:` and `Disallow:` are valid choices.
+
+   If either is thin, reference `templates/robots-ai-bots.txt` as a paste-ready starting point.
+
+4. **Core Web Vitals** — if `PSI_API_KEY` is set in env (or `~/.config/seo-superpower/.env`), call `scripts/psi-quick.py <url>` (CrUX field data preferred, lab fallback flagged). If no key, **skip CWV** and note it in the output rather than guessing. Thresholds are p75: **LCP < 2.5s, INP < 200ms, CLS < 0.1** [1].
 
 5. **Emit a partial `SEO_AUDIT.md`** with this banner at the top:
 
