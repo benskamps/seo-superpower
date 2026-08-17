@@ -12,6 +12,41 @@ small additions ship as patch releases (`0.3.x`); new skills ship as minor relea
 
 ## [Unreleased]
 
+### Added
+
+- **Competitor Codebase Mirror** (`scripts/codebase-mirror.js`) + `mirroring-competitor-codebases`
+  — moat #4 from [VISION.md](VISION.md), the third of the five to ship. Reads the HTML
+  both sites actually serve and reverse-engineers each side's *template* rather than its
+  prose: page-level JSON-LD types, H1/H2/H3 shape and the share phrased as questions,
+  internal-link density and anchor quality, meta coverage (description, canonical, OG,
+  hreflang, image `alt`), `dateModified`, framework fingerprint, and whether body content
+  arrives in the HTML or behind a client-side shell. N pages per side fold into *rates*,
+  not anecdotes — a type on ≥50% of their pages is a template, one page is a coincidence.
+  Reports **only** what they ship and you don't (swapping the sides must not reproduce a
+  single gap id — that direction contract is a test), ranked by severity × SERP delta,
+  each row handing off to the skill that fixes that class of gap. 38 unit tests,
+  hermetic — HTML fixtures in `fixtures/codebase-mirror/`, an injected fetch, no network.
+- **Rendering as a first-class SEO gap axis** — a page delivered as an empty
+  `<div id="root">` plus scripts is scored `client-shell` and reported at high severity.
+  AI-search crawlers do not execute JS, so that page is invisible to them regardless of
+  copy quality. It is a build decision no content audit surfaces.
+- **`/seo mirror`** — new routing intent in `commands/seo.md`, distinct from
+  `/seo gap`: `analyzing-content-gaps` diffs *prose* for one query, this diffs the
+  *template* across page types.
+
+### Notes
+
+- The mirror never invents a SERP position. Without `--serp` (GSC positions via
+  `finding-underserved-keywords`) every gap row is tagged `serp: "unknown"` and the
+  report carries a warning that the ordering is severity-only — the same
+  refuse-to-fake-it stance as the GEO Diff Bot's `external` verdict.
+- Live fetches honour the competitor's `robots.txt` for this tool's user-agent (a
+  disallowed path is skipped with a warning, never fetched anyway) and rate-limit to one
+  request per origin per `--delay` ms (default 1000).
+- Skill count is now 17. Per [DEVELOPING.md](DEVELOPING.md#releasing) a new skill ships as
+  a minor release, so `.claude-plugin/plugin.json` still reads `0.4.0` here — the bump to
+  `0.5.0` belongs to the release commit, not to this change.
+
 ## [0.4.0] — 2026-07-23
 
 Makes the checks that gate routing executable, and closes a hole in the AI-citation
