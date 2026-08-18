@@ -74,7 +74,7 @@ These are the demos no incumbent can match:
 1. **Auto-PR-on-decay** — Weekly cron detects >20% impression drop in GSC, opens a refresh PR with updated copy + schema + internal links.
 2. **GEO Diff Bot** ✅ *shipped* — Daily polls ChatGPT/Claude/Perplexity, diffs citations vs. yesterday, correlates losses to recent commits via `git blame` (`scripts/geo-diff-bot.js`, `tracking-citation-diffs`).
 3. **Programmatic Page Forge** — Reads your Supabase/Sanity schema, generates 500 unique location pages with schema and internal links — in an afternoon.
-4. **Competitor Codebase Mirror** — Scrapes a competitor's HTML, reverse-engineers their schema/heading/link patterns, writes "things they do you don't" ranked by SERP delta.
+4. **Competitor Codebase Mirror** ✅ *shipped* — Reads the HTML both sites serve, reverse-engineers each side's *template* (page-level schema types, question-heading shape, internal-link density, meta coverage, server-rendered vs client shell, stack fingerprint), folds N pages per side into rates, and writes "things they do you don't" ranked by severity × SERP delta (`scripts/codebase-mirror.js`, `mirroring-competitor-codebases`). Robots.txt-gated fetches; with no GSC positions supplied the ranking is severity-only and says so rather than inventing a rank.
 5. **Brief-to-Merged-PR** ✅ *shipped* — `/seo brief "<topic>"` → GSC striking-distance + SERP research → deterministic brief assembly → `draft: true` content file → draft-to-PR (`scripts/brief-assembly.js`, `generating-content-briefs`). The draft's prose is the writer's step; everything up to it is assembled and unit-tested.
 
 ## Honest limits

@@ -1,6 +1,6 @@
 # seo-superpower
 
-![version](https://img.shields.io/badge/version-0.4.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A4FFF) ![skills](https://img.shields.io/badge/skills-16-orange)
+![version](https://img.shields.io/badge/version-0.4.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A4FFF) ![skills](https://img.shields.io/badge/skills-17-orange)
 
 **End-to-end SEO + Generative Engine Optimization for technical builders. One command. Free-tier only.**
 
@@ -20,7 +20,7 @@ A [Claude Code](https://claude.com/claude-code) plugin that turns SEO from "thin
 That's it. After setup, just type `/seo`. The plugin figures out your site's lifecycle phase (just shipped? indexed but stalled? mature and decaying?), runs the right diagnostic in parallel, and routes you to the right action — usually a PR.
 
 **Get started:** [QUICKSTART.md](QUICKSTART.md) — the exact prompts to type in 5 minutes.
-**Reference:** [skills/REGISTRY.md](skills/REGISTRY.md) (all 16 skills) · [MCP_SERVERS.md](MCP_SERVERS.md) (the bundled tools).
+**Reference:** [skills/REGISTRY.md](skills/REGISTRY.md) (all 17 skills) · [MCP_SERVERS.md](MCP_SERVERS.md) (the bundled tools).
 
 ---
 
@@ -38,6 +38,7 @@ Other Claude SEO tools require paid APIs (DataForSEO, $60+/mo). The SaaS giants 
 | **Week 1** (pre-rankings) | `/seo audit` | Prioritized fix list ranked by traffic-impact × fix-effort. Lighthouse + indexability + schema. |
 | **Month 2+** (have GSC data) | `/seo underserved` | Striking-distance keyword opportunities you already rank for, pulled from your GSC. |
 | **Growth** (writing new) | `/seo brief "<topic>"` | Research-grounded content brief (keyword+intent, striking-distance angle, headline moat, entities/PAA, internal links, word-count target) **plus a draft file, opened as a PR**. Brief to merged PR. |
+| **Growth** (someone outranks you) | `/seo mirror` | Reverse-engineers what a competitor's template emits — schema types, question-heading shape, internal-link density, meta coverage, server-rendered vs client shell — and ranks the patterns they ship and you don't by SERP delta. |
 | **Mature** (decay risk) | `/seo refresh` | Auto-detects pages losing >20% impressions. Ships a refresh PR. |
 | **Always-on** | `/seo geo-check` | Polls ChatGPT / Perplexity / Claude for citations of your site. Tracks share over time. |
 | **Always-on** | `/seo geo-diff` | Diffs two citation snapshots and ties each gained/lost citation to the commit that caused it — or flags it as an external shift. |
@@ -71,7 +72,7 @@ conventional app directories (`web/`, `apps/*`, `site/`, …) two levels deep, s
 Jekyll, and hand-rolled static sites with no `package.json`. These report `unknown` and the
 skill falls back to asking you where things go — it will not guess. PRs welcome.
 
-## Skills included (16 total — full registry shipped)
+## Skills included (17 total — full registry shipped)
 
 | Skill | Lifecycle phase | Triggers on |
 |---|---|---|
@@ -87,6 +88,7 @@ skill falls back to asking you where things go — it will not guess. PRs welcom
 | `tracking-citation-diffs` | Cross-cutting (Mature) | "citation diff", "did my PR win/lose citations", "why did ChatGPT stop citing us" |
 | `analyzing-content-gaps` | Growth | "why does X outrank us", "content gap", "content brief" |
 | `generating-content-briefs` | Growth | "/seo brief", "brief to PR", "write a brief for X and a draft" |
+| `mirroring-competitor-codebases` | Growth → Mature | "mirror their codebase", "what is their site doing that mine isn't", "reverse-engineer their SEO setup" |
 | [`finding-underserved-keywords`](https://github.com/benskamps/finding-underserved-keywords) | Growth + Mature | "GSC analysis", "striking distance keywords", impression/CTR gaps |
 | `building-eeat-and-authority` | Growth → Mature | "E-E-A-T", "author bios", "build authority", "YMYL" |
 | `generating-programmatic-seo` | Growth → Mature | "programmatic SEO", "scale content", "city pages from data" |
@@ -94,7 +96,7 @@ skill falls back to asking you where things go — it will not guess. PRs welcom
 
 Plus `hooks/seo-decay-check.json` — a weekly content-decay detection hook that surfaces nudges on session start and runs on demand via `/seo refresh`.
 
-All 16 skills (14 child skills + `seo-bootstrap` + the `seo-superpower` meta-router) are shipped — the 14 from [VISION.md](VISION.md) plus `tracking-citation-diffs` (the GEO Diff Bot) and `generating-content-briefs` (the `/seo brief` moat). Beyond v3: cross-site comparison, multi-language hreflang, decay-check automation activation.
+All 17 skills (15 child skills + `seo-bootstrap` + the `seo-superpower` meta-router) are shipped — the 14 from [VISION.md](VISION.md) plus `tracking-citation-diffs` (the GEO Diff Bot), `generating-content-briefs` (the `/seo brief` moat), and `mirroring-competitor-codebases` (the Competitor Codebase Mirror). Beyond v3: cross-site comparison, multi-language hreflang, decay-check automation activation.
 
 ## MCP tools bundled
 

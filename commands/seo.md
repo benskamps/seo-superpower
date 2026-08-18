@@ -1,6 +1,6 @@
 ---
 description: One-call SEO. Diagnoses the site, routes to the right skill, ships a PR or a ranked list. Use without arguments to triage from scratch, or pass a phrase like "audit", "underserved keywords", "refresh stale content", or "bootstrap".
-argument-hint: "[optional intent: audit | bootstrap | underserved | refresh | brief | geo-check | geo-diff]"
+argument-hint: "[optional intent: audit | bootstrap | underserved | refresh | brief | mirror | geo-check | geo-diff]"
 ---
 
 You're being invoked via the `/seo` slash command. Trigger the `seo-superpower` meta-skill to diagnose and route.
@@ -25,6 +25,7 @@ If `$ARGUMENTS` contains an explicit intent, skip diagnosis and route directly:
 - `on-page` or `polish` → `optimizing-on-page`
 - `schema` or `json-ld` → `adding-schema-markup`
 - `gap` or `competitor` → `analyzing-content-gaps`
+- `mirror` or `codebase-mirror` → `mirroring-competitor-codebases` (parses the HTML both sites serve and reports the template patterns they ship and you don't — schema, heading shape, internal links, meta coverage, rendering — ranked by SERP delta; runs `scripts/codebase-mirror.js`). Prose-level diff for one query is `analyzing-content-gaps`; this is the template-level diff.
 - `eeat` or `authority` → `building-eeat-and-authority`
 - `programmatic` or `scale` → `generating-programmatic-seo`
 - `geo-check` or `geo` → `optimizing-for-generative-engines` (uses geo-check MCP)

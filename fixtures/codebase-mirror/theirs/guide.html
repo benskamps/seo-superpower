@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="Astro v4.5.0">
+  <title>How to send your first invoice — Billfold</title>
+  <meta name="description" content="A ten-minute walkthrough: client import, tax fields, payment links, and the reminder schedule.">
+  <link rel="canonical" href="https://billfold.example/guide/first-invoice">
+  <meta property="og:title" content="How to send your first invoice">
+  <meta property="og:image" content="https://billfold.example/og-guide.png">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@graph":[
+    {"@type":"Article","headline":"How to send your first invoice","dateModified":"2026-08-02"},
+    {"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Guide"}]},
+    {"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What tax fields does an invoice need?"}]}
+  ]}
+  </script>
+</head>
+<body>
+  <nav>
+    <a href="/">Billfold home</a>
+    <a href="/guide/late-payments">Chasing late payments</a>
+    <a href="/pricing">Billfold pricing</a>
+  </nav>
+
+  <h1>How to send your first invoice</h1>
+  <p>Ten minutes, start to finish. This walkthrough assumes you have a client and
+  some tracked hours; if you have neither, start with the sample project and come
+  back when a real one exists.</p>
+
+  <h2>What do you need before you start?</h2>
+  <p>Your tax registration number, the client billing address, a payment processor
+  account, and your standard payment terms in days. Everything else has a sane
+  default you can change later without reissuing anything.</p>
+
+  <h2>How do you import clients from a spreadsheet?</h2>
+  <p>Export your existing list to CSV with one column per field, then map columns
+  on import. Billfold matches on email first and company name second, so a client
+  with two contacts merges into a single record instead of duplicating.</p>
+
+  <h2>Which tax fields are required?</h2>
+  <p>Registration number, tax rate, and the reverse-charge flag for cross-border
+  work in the EU and UK. Miss the reverse-charge flag and the invoice is legally
+  wrong even though the arithmetic is right — this is the field people forget.</p>
+
+  <h2>How should you set payment terms?</h2>
+  <p>Fourteen days beats thirty for freelancers: the shorter clock gives you two
+  reminder cycles inside the month you did the work. See
+  <a href="/guide/late-payments">the late payment guide</a> for the cadence.</p>
+
+  <h2>What happens after you hit send?</h2>
+  <p>The client gets a link, not an attachment, so you can see when it was opened.
+  Reminders fire on day three, day ten, and day fifteen unless payment lands.</p>
+
+  <img src="/guide-import.png" alt="CSV client import mapping screen">
+  <img src="/guide-tax.png" alt="Tax field editor showing reverse charge toggle">
+
+  <footer>
+    <a href="/">Billfold home</a>
+    <a href="/pricing">Compare Billfold plans</a>
+    <a href="/guide/late-payments">Late payment guide</a>
+    <a href="/security">Billfold security practices</a>
+    <a href="/terms">Terms of service</a>
+  </footer>
+</body>
+</html>
