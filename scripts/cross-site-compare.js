@@ -29,10 +29,99 @@
 const fs = require("fs");
 const path = require("path");
 
-const { detectFramework } = require("./detect-framework.js");
+const { detectProject } = require("./detect-framework.js");
 
 // Key AI search crawlers that govern LLM answer synthesis
 const AI_BOTS = ["OAI-SearchBot", "PerplexityBot", "ClaudeBot", "Google-Extended"];
+
+/**
+ * Parse robots.txt into rule groups.
+ *
+ * A group is one or more consecutive `User-agent:` lines followed by its rules;
+ * the next `User-agent:` after a rule line starts a new group. This has to be a
+ * real parser rather than a regex: the previous implementation searched forward
+ * from a bot's User-agent line for the next `Disallow:` anywhere in the file,
+ * which happily crossed group boundaries. On a robots.txt that allows a bot
+ * explicitly and disallows some unrelated crawler further down, it attributed
+ * that unrelated `Disallow: /` to the allowed bot and reported it as Blocked.
+ */
+function parseRobots(content) {
+  const groups = [];
+  let current = null;
+  let lastLineWasAgent = false;
+
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.replace(/#.*$/, "").trim();
+    if (!line) continue;
+    const match = line.match(/^([A-Za-z-]+)\s*:\s*(.*)$/);
+    if (!match) continue;
+
+    const field = match[1].toLowerCase();
+    const value = match[2].trim();
+
+    if (field === "user-agent") {
+      // Consecutive User-agent lines share one group's rules.
+      if (current === null || !lastLineWasAgent) {
+        current = { agents: [], rules: [] };
+        groups.push(current);
+      }
+      current.agents.push(value.toLowerCase());
+      lastLineWasAgent = true;
+    } else if (field === "allow" || field === "disallow") {
+      if (current === null) continue; // rule before any User-agent: ignored
+      current.rules.push({ type: field, path: value });
+      lastLineWasAgent = false;
+    }
+  }
+  return groups;
+}
+
+/**
+ * Decide whether a group's rules permit crawling the site root.
+ * Longest matching path wins; Allow beats Disallow at equal length, per Google's
+ * documented precedence. An empty `Disallow:` means "allow everything".
+ */
+function rootAccessForGroup(group) {
+  let longestDisallow = null;
+  let longestAllow = null;
+
+  for (const rule of group.rules) {
+    if (rule.path === "") continue; // `Disallow:` with no value allows all
+    if (!"/".startsWith(rule.path)) continue; // rule does not cover the root
+    if (rule.type === "disallow") {
+      if (longestDisallow === null || rule.path.length > longestDisallow.length) {
+        longestDisallow = rule.path;
+      }
+    } else if (longestAllow === null || rule.path.length > longestAllow.length) {
+      longestAllow = rule.path;
+    }
+  }
+
+  if (longestDisallow === null) return true;
+  if (longestAllow !== null && longestAllow.length >= longestDisallow.length) return true;
+  return false;
+}
+
+/**
+ * Resolve one bot's access, preferring a group naming it explicitly over the
+ * catch-all `*` group. Multiple groups naming the same agent are merged.
+ */
+function botAccess(groups, bot) {
+  const target = bot.toLowerCase();
+  const collect = (name) => {
+    const matched = groups.filter(g => g.agents.includes(name));
+    if (matched.length === 0) return null;
+    return { agents: [name], rules: matched.flatMap(g => g.rules) };
+  };
+
+  const specific = collect(target);
+  if (specific) return rootAccessForGroup(specific) ? "Allowed" : "Blocked";
+
+  const wildcard = collect("*");
+  if (wildcard) return rootAccessForGroup(wildcard) ? "Allowed (Default)" : "Blocked (by *)";
+
+  return "Allowed (No matching rule)";
+}
 
 /**
  * Inspect a single directory for technical SEO assets and hygiene.
@@ -61,11 +150,17 @@ function inspectSite(sitePath, siteName) {
     issues: []
   };
 
-  // 1. Framework detection
+  // 1. Framework detection.
+  // detect-framework.js exports detectProject, not detectFramework, and returns
+  // { framework: <id string>, label, detected } — not a nested object. The old
+  // call destructured a name the module never exported, so every lookup threw
+  // TypeError, was swallowed by the catch, and every site in every comparison
+  // reported "Unknown" — which also cost each of them the 15-point framework
+  // bonus in the health score below.
   try {
-    const fw = detectFramework(resolved, { searchSubdirs: true });
-    if (fw && fw.framework) {
-      result.framework = fw.framework.label || fw.framework.id || "Detected";
+    const fw = detectProject(resolved, { searchSubdirs: true });
+    if (fw && fw.detected) {
+      result.framework = fw.label || fw.framework || "Detected";
     }
   } catch {
     result.framework = "Unknown";
@@ -86,22 +181,9 @@ function inspectSite(sitePath, siteName) {
       const content = fs.readFileSync(rPath, "utf8");
       result.robotsSizeBytes = Buffer.byteLength(content, "utf8");
 
+      const robotGroups = parseRobots(content);
       for (const bot of AI_BOTS) {
-        const botRegex = new RegExp(`User-agent:\\s*${bot}[\\s\\S]*?Disallow:\\s*(.*)`, "i");
-        const match = content.match(botRegex);
-        if (match) {
-          const disallow = match[1].trim();
-          result.aiBots[bot] = disallow === "/" ? "Blocked" : "Allowed";
-        } else {
-          // Default rule check
-          const defaultRegex = /User-agent:\s*\*[\s\S]*?Disallow:\s*(.*)/i;
-          const defMatch = content.match(defaultRegex);
-          if (defMatch && defMatch[1].trim() === "/") {
-            result.aiBots[bot] = "Blocked (by *)";
-          } else {
-            result.aiBots[bot] = "Allowed (Default)";
-          }
-        }
+        result.aiBots[bot] = botAccess(robotGroups, bot);
       }
       break;
     }
@@ -387,7 +469,10 @@ Options:
 module.exports = {
   inspectSite,
   renderMarkdownTable,
-  renderTerminalTable
+  renderTerminalTable,
+  // exported for unit tests
+  parseRobots,
+  botAccess
 };
 
 if (require.main === module) {

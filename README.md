@@ -510,7 +510,7 @@ Documentation:
 Every script, validator, and skill in `seo-superpower` is guarded by comprehensive offline unit tests and static analysis. Tests run in under 5 seconds with zero network calls:
 
 ```bash
-# 1. Run Node.js unit tests (280 tests across all scripts & fixtures)
+# 1. Run Node.js unit tests (289 tests across all scripts & fixtures)
 node --test test/*.test.js
 
 # 2. Run Python unit tests (47 tests across schema & CI validators)

@@ -9,8 +9,117 @@ const { execFileSync } = require("node:child_process");
 const {
   inspectSite,
   renderMarkdownTable,
-  renderTerminalTable
+  renderTerminalTable,
+  parseRobots,
+  botAccess
 } = require("../scripts/cross-site-compare.js");
+
+// ---------------------------------------------------------------------------
+// robots.txt AI-bot access.
+//
+// The previous implementation searched forward from a bot's User-agent line for
+// the next `Disallow:` anywhere in the file. On a robots.txt that explicitly
+// allows the AI crawlers and disallows one unrelated scraper further down, it
+// attributed that unrelated `Disallow: /` to every allowed bot above it and
+// reported them as Blocked — telling you to "fix" a site that was already
+// correct, on the plugin's flagship GEO check.
+// ---------------------------------------------------------------------------
+
+// The shape that broke it: allow-only groups, then an unrelated Disallow.
+const ALLOW_THEN_UNRELATED_BLOCK = `
+User-agent: *
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+# Block one unrelated training scraper
+User-agent: Bytespider
+Disallow: /
+`;
+
+test("botAccess: an unrelated Disallow later in the file does not block an allowed bot", () => {
+  const groups = parseRobots(ALLOW_THEN_UNRELATED_BLOCK);
+  assert.equal(botAccess(groups, "OAI-SearchBot"), "Allowed");
+  assert.equal(botAccess(groups, "PerplexityBot"), "Allowed");
+});
+
+test("botAccess: a bot with its own Disallow is blocked", () => {
+  const groups = parseRobots("User-agent: OAI-SearchBot\nDisallow: /\n");
+  assert.equal(botAccess(groups, "OAI-SearchBot"), "Blocked");
+});
+
+test("botAccess: falls back to the wildcard group", () => {
+  const blocked = parseRobots("User-agent: *\nDisallow: /\n");
+  assert.equal(botAccess(blocked, "OAI-SearchBot"), "Blocked (by *)");
+
+  const open = parseRobots("User-agent: *\nDisallow:\n");
+  assert.equal(botAccess(open, "OAI-SearchBot"), "Allowed (Default)");
+});
+
+test("botAccess: an explicit bot group overrides a restrictive wildcard", () => {
+  const groups = parseRobots(
+    "User-agent: *\nDisallow: /\n\nUser-agent: OAI-SearchBot\nAllow: /\n"
+  );
+  assert.equal(botAccess(groups, "OAI-SearchBot"), "Allowed");
+  assert.equal(botAccess(groups, "ClaudeBot"), "Blocked (by *)");
+});
+
+test("botAccess: Allow beats Disallow at equal specificity", () => {
+  const groups = parseRobots("User-agent: OAI-SearchBot\nDisallow: /\nAllow: /\n");
+  assert.equal(botAccess(groups, "OAI-SearchBot"), "Allowed");
+});
+
+test("botAccess: a Disallow on a subpath does not block the root", () => {
+  const groups = parseRobots("User-agent: OAI-SearchBot\nDisallow: /admin\n");
+  assert.equal(botAccess(groups, "OAI-SearchBot"), "Allowed");
+});
+
+test("parseRobots: consecutive User-agent lines share one rule group", () => {
+  const groups = parseRobots(
+    "User-agent: OAI-SearchBot\nUser-agent: PerplexityBot\nDisallow: /\n"
+  );
+  assert.equal(groups.length, 1);
+  assert.deepEqual(groups[0].agents, ["oai-searchbot", "perplexitybot"]);
+  assert.equal(botAccess(groups, "PerplexityBot"), "Blocked");
+});
+
+test("parseRobots: ignores comments and blank lines", () => {
+  const groups = parseRobots("# a comment\n\nUser-agent: * # trailing\nDisallow: /\n");
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0].rules.length, 1);
+});
+
+// ---------------------------------------------------------------------------
+// Framework detection.
+//
+// cross-site-compare imported `detectFramework`, a name detect-framework.js
+// never exported. Every lookup threw TypeError, the catch swallowed it, and
+// every site in every comparison reported "Unknown" — which also silently cost
+// each site the 15-point framework bonus in its health score.
+// ---------------------------------------------------------------------------
+
+test("inspectSite: detects a real framework instead of always reporting Unknown", () => {
+  const tmpDir = path.resolve(__dirname, "../fixtures/tmp_test_framework");
+  fs.mkdirSync(tmpDir, { recursive: true });
+  try {
+    fs.writeFileSync(
+      path.join(tmpDir, "package.json"),
+      JSON.stringify({ name: "x", dependencies: { next: "15.0.0", react: "19.0.0" } }),
+      "utf8"
+    );
+    fs.mkdirSync(path.join(tmpDir, "app"), { recursive: true });
+
+    const result = inspectSite(tmpDir, "FrameworkSite");
+    assert.notEqual(result.framework, "Unknown");
+    assert.match(result.framework, /Next\.js/);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
 
 const SCRIPT_PATH = path.resolve(__dirname, "../scripts/cross-site-compare.js");
 
