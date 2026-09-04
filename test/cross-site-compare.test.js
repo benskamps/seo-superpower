@@ -102,6 +102,94 @@ test("parseRobots: ignores comments and blank lines", () => {
 // each site the 15-point framework bonus in its health score.
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Route-generated assets and source-embedded JSON-LD.
+//
+// These three blind spots made the tool report real, well-configured sites as
+// broken: a Next.js app that generates robots.txt from app/robots.ts was called
+// "Missing robots.txt", src/app/sitemap.ts was not recognised at all, and a
+// self-closing JSX <script type="application/ld+json" /> was invisible to a
+// regex that required a closing tag.
+// ---------------------------------------------------------------------------
+
+function makeTmpSite(name, files) {
+  const dir = path.resolve(__dirname, `../fixtures/${name}`);
+  fs.rmSync(dir, { recursive: true, force: true });
+  for (const [rel, content] of Object.entries(files)) {
+    const full = path.join(dir, rel);
+    fs.mkdirSync(path.dirname(full), { recursive: true });
+    fs.writeFileSync(full, content, "utf8");
+  }
+  return dir;
+}
+
+test("inspectSite: recognises a route-generated robots.txt and abstains on bot rules", () => {
+  const dir = makeTmpSite("tmp_dynamic_robots", {
+    "app/robots.ts": "export default function robots() { return { rules: [] }; }"
+  });
+  try {
+    const result = inspectSite(dir, "DynRobots");
+    assert.equal(result.hasRobots, true);
+    assert.equal(result.robotsSource, "dynamic");
+    // We cannot know what the route emits without fetching the deployed URL.
+    assert.equal(result.aiBots["OAI-SearchBot"], "Unknown (dynamic)");
+    assert.ok(!result.issues.some(i => i === "Missing robots.txt"));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("inspectSite: recognises a sitemap route under src/app", () => {
+  const dir = makeTmpSite("tmp_src_sitemap", {
+    "src/app/sitemap.ts": "export default function sitemap() { return []; }"
+  });
+  try {
+    const result = inspectSite(dir, "SrcSitemap");
+    assert.equal(result.hasSitemap, true);
+    assert.equal(result.sitemapUrlCount, -1);
+    assert.ok(!result.issues.some(i => i === "Missing sitemap.xml"));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("inspectSite: finds JSON-LD in a self-closing JSX script tag", () => {
+  const dir = makeTmpSite("tmp_jsx_schema", {
+    "app/Schema.tsx":
+      'const data = { "@context": "https://schema.org", "@type": "Article", name: "x" };\n' +
+      "export default function S() {\n" +
+      '  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />;\n' +
+      "}\n"
+  });
+  try {
+    const result = inspectSite(dir, "JsxSchema");
+    assert.equal(result.hasSchema, true);
+    assert.equal(result.schemaSource, "dynamic");
+    assert.ok(result.schemaTypes.includes("Article"));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("inspectSite: scans deeply enough to find schema past the first few files", () => {
+  const files = {};
+  // Bury the JSON-LD behind more files and deeper nesting than the old
+  // 5-file / depth-3 sample would ever have reached.
+  for (let i = 0; i < 12; i++) files[`app/components/part${i}.tsx`] = "export const x = 1;\n";
+  files["app/a/b/c/d/Deep.tsx"] =
+    'const d = { "@type": "Organization" };\n' +
+    'export default () => <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(d)}} />;\n';
+
+  const dir = makeTmpSite("tmp_deep_schema", files);
+  try {
+    const result = inspectSite(dir, "DeepSchema");
+    assert.equal(result.hasSchema, true);
+    assert.ok(result.schemaTypes.includes("Organization"));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("inspectSite: detects a real framework instead of always reporting Unknown", () => {
   const tmpDir = path.resolve(__dirname, "../fixtures/tmp_test_framework");
   fs.mkdirSync(tmpDir, { recursive: true });

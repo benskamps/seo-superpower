@@ -190,10 +190,35 @@ function inspectSite(sitePath, siteName) {
   }
 
   if (!result.hasRobots) {
-    for (const bot of AI_BOTS) {
-      result.aiBots[bot] = "Allowed (No robots.txt)";
+    // A Next.js app can generate robots.txt from a route handler, in which case
+    // no static file exists but the site absolutely has one. Reporting "Missing
+    // robots.txt" for those sites is a false negative — the dynamic sitemap
+    // equivalent was already handled below, robots was not.
+    const robotsRoutes = [
+      "app/robots.ts", "app/robots.js",
+      "src/app/robots.ts", "src/app/robots.js",
+      "app/robots.txt/route.ts", "src/app/robots.txt/route.ts"
+    ].map(r => path.join(resolved, r));
+
+    const robotsRoute = robotsRoutes.find(p => fs.existsSync(p));
+    if (robotsRoute) {
+      result.hasRobots = true;
+      result.robotsSource = "dynamic";
+      result.robotsSizeBytes = -1;
+      // What that route emits is only knowable from the deployed response, so
+      // abstain rather than guess. A wrong "Allowed" here is worse than "Unknown".
+      for (const bot of AI_BOTS) {
+        result.aiBots[bot] = "Unknown (dynamic)";
+      }
+      result.issues.push(
+        `robots.txt is generated at runtime by ${path.relative(resolved, robotsRoute)} — verify AI crawler rules against the deployed /robots.txt`
+      );
+    } else {
+      for (const bot of AI_BOTS) {
+        result.aiBots[bot] = "Allowed (No robots.txt)";
+      }
+      result.issues.push("Missing robots.txt");
     }
-    result.issues.push("Missing robots.txt");
   }
 
   // 3. Sitemap inspection
@@ -216,19 +241,29 @@ function inspectSite(sitePath, siteName) {
   }
 
   if (!result.hasSitemap) {
-    // Check Next.js app/sitemap.ts or src/routes/sitemap.xml
-    const appSitemap = path.join(resolved, "app", "sitemap.ts");
-    const appSitemapJs = path.join(resolved, "app", "sitemap.js");
-    if (fs.existsSync(appSitemap) || fs.existsSync(appSitemapJs)) {
+    // Next.js route-generated sitemap. The src/app/ variant is as common as the
+    // app/ one and was previously missed, so src-layout projects were reported
+    // as having no sitemap at all.
+    const sitemapRoutes = [
+      "app/sitemap.ts", "app/sitemap.js",
+      "src/app/sitemap.ts", "src/app/sitemap.js",
+      "app/sitemap.xml/route.ts", "src/app/sitemap.xml/route.ts"
+    ].map(r => path.join(resolved, r));
+
+    if (sitemapRoutes.some(p => fs.existsSync(p))) {
       result.hasSitemap = true;
-      result.sitemapUrlCount = -1; // Dynamic Next.js generator
+      result.sitemapUrlCount = -1; // Dynamic generator; URL count unknown statically
     } else {
       result.issues.push("Missing sitemap.xml");
     }
   }
 
   // 4. HTML Scan (check representative HTML/template files)
-  const htmlFiles = findHtmlFiles(resolved, 5);
+  // Sampling five files at depth 3 and concluding "no schema / no canonical" is
+  // a coin flip on any real app — road-trip/web has 25 files carrying JSON-LD and
+  // scored 0 because none landed in the first five. These are small source files
+  // read offline, so scan broadly enough for the answer to mean something.
+  const htmlFiles = findHtmlFiles(resolved, 400);
   const foundSchemaTypes = new Set();
 
   for (const hPath of htmlFiles) {
@@ -240,16 +275,28 @@ function inspectSite(sitePath, siteName) {
       if (/<meta[^>]+name=["']description["']/i.test(content)) {
         result.hasDescription = true;
       }
-      const schemaMatches = content.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
-      if (schemaMatches) {
+      // Paired <script type="application/ld+json">…</script> carries its JSON
+      // inline. React sources far more often emit a SELF-CLOSING tag:
+      //   <script type="application/ld+json" dangerouslySetInnerHTML={{__html: …}} />
+      // which has no closing tag, so the paired-tag regex missed it entirely and
+      // reported "Schema.org: Missing" for sites with dozens of JSON-LD blocks.
+      const schemaMatches = content.match(
+        /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+      );
+      const hasLdJson = /application\/ld\+json/i.test(content);
+
+      if (hasLdJson) {
         result.hasSchema = true;
-        for (const m of schemaMatches) {
-          const typeMatch = m.match(/"@type"\s*:\s*"([A-Za-z0-9]+)"/g);
-          if (typeMatch) {
-            for (const tm of typeMatch) {
-              const t = tm.split(":")[1].replace(/["\s]/g, "");
-              if (t) foundSchemaTypes.add(t);
-            }
+        // For self-closing tags the object is built elsewhere in the file, so
+        // widen the search to the whole source rather than claiming none.
+        const scope = schemaMatches ? schemaMatches.join("\n") : content;
+        if (!schemaMatches) result.schemaSource = "dynamic";
+
+        const typeMatch = scope.match(/["']?@type["']?\s*:\s*["']([A-Za-z0-9]+)["']/g);
+        if (typeMatch) {
+          for (const tm of typeMatch) {
+            const t = tm.split(":")[1].replace(/["'\s]/g, "");
+            if (t) foundSchemaTypes.add(t);
           }
         }
       }
@@ -282,10 +329,14 @@ function inspectSite(sitePath, siteName) {
 /**
  * Find up to maxCount HTML or layout template files.
  */
+const SKIP_DIRS = new Set([
+  "node_modules", "dist", "build", "out", "coverage", "vendor", "__tests__"
+]);
+
 function findHtmlFiles(dir, maxCount) {
   const matched = [];
   function walk(curr, depth) {
-    if (depth > 3 || matched.length >= maxCount) return;
+    if (depth > 8 || matched.length >= maxCount) return;
     let entries;
     try {
       entries = fs.readdirSync(curr, { withFileTypes: true });
@@ -293,7 +344,7 @@ function findHtmlFiles(dir, maxCount) {
       return;
     }
     for (const e of entries) {
-      if (e.name.startsWith(".") || e.name === "node_modules" || e.name === "dist") continue;
+      if (e.name.startsWith(".") || SKIP_DIRS.has(e.name)) continue;
       const full = path.join(curr, e.name);
       if (e.isDirectory()) {
         walk(full, depth + 1);

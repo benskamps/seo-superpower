@@ -34,7 +34,7 @@ confident `[PASS]` on input it had not actually checked. Total skills: 18.
 - **Full ISO 639-1 language coverage** — the old hard-coded 71-code subset raised a bogus "rare code" warning for assigned languages including `nb`, `nn`, `gu`, `mt`, `lb`, `fo`, `gd`, `or` and `as`. Deprecated codes (`iw`, `in`, `jw`, `mo`, `sh`) are now rejected with the modern equivalent.
 - **`fixtures/decay/`** — Committed decaying and stable impression fixtures backing the workflow self-test.
 - **Decay sweep CI self-test** — `.github/workflows/decay-sweep.yml` now asserts that the runner detects a decaying page (exit 1), passes clean data (exit 0), and refuses to report health with no data source (exit 2). The live sweep runs only when a real export is wired, and says so loudly when it is not.
-- **41 regression tests** (248 → 289 Node tests) covering every case above, including the three decay inputs that previously read as healthy.
+- **45 regression tests** (248 → 293 Node tests) covering every case above, including the three decay inputs that previously read as healthy.
 
 ### Changed
 
