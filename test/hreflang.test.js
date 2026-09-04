@@ -218,3 +218,193 @@ test("CLI: validate and generate commands execute cleanly against temporary fixt
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+// ---------------------------------------------------------------------------
+// ISO 3166-1 region validation.
+//
+// Every code below used to return { valid: true } and the CLI reported
+// "[PASS] All hreflang links are fully compliant". Only the language half of a
+// tag was checked; the region half was uppercased and accepted unread. en-UK is
+// the most common hreflang error in the wild and the skill doc calls it out by
+// name, so the validator has to be the thing that catches it.
+// ---------------------------------------------------------------------------
+
+test("validateHreflangCode: rejects en-UK and points at en-GB", () => {
+  const res = validateHreflangCode("en-UK");
+  assert.equal(res.valid, false);
+  assert.match(res.reason, /not an officially assigned ISO 3166-1/);
+  assert.equal(res.suggestion, "en-GB");
+});
+
+test("validateHreflangCode: rejects unassigned region codes", () => {
+  for (const code of ["en-XX", "en-ZZ", "de-QQ"]) {
+    const res = validateHreflangCode(code);
+    assert.equal(res.valid, false, `${code} must not validate`);
+    assert.match(res.reason, /not an assigned ISO 3166-1 alpha-2 region code/);
+  }
+});
+
+test("validateHreflangCode: rejects withdrawn regions with their successor", () => {
+  const res = validateHreflangCode("nl-AN"); // Netherlands Antilles, dissolved 2010
+  assert.equal(res.valid, false);
+  assert.match(res.reason, /withdrawn ISO 3166-1 code/);
+  assert.equal(res.suggestion, "nl-CW");
+});
+
+test("validateHreflangCode: rejects non-country regions such as EU", () => {
+  const res = validateHreflangCode("en-EU");
+  assert.equal(res.valid, false);
+  assert.match(res.reason, /must be countries/);
+});
+
+test("validateHreflangCode: accepts every assigned ISO 3166-1 region", () => {
+  for (const region of ["GB", "US", "DE", "JP", "BR", "ZA", "AU", "IN"]) {
+    const res = validateHreflangCode(`en-${region}`);
+    assert.equal(res.valid, true, `en-${region} must validate`);
+    assert.equal(res.canonical, `en-${region}`);
+  }
+});
+
+test("validateHreflangCode: accepts UN M.49 numeric areas like es-419", () => {
+  const res = validateHreflangCode("es-419");
+  assert.equal(res.valid, true);
+  assert.equal(res.canonical, "es-419");
+});
+
+test("validateHreflangCode: warns on user-assigned XK but does not reject it", () => {
+  const res = validateHreflangCode("sq-XK");
+  assert.equal(res.valid, true);
+  assert.match(res.warning, /not ISO-official/);
+});
+
+// ---------------------------------------------------------------------------
+// ISO 639-1 language coverage and ISO 15924 script subtags.
+// ---------------------------------------------------------------------------
+
+test("validateHreflangCode: no spurious warning for real but uncommon languages", () => {
+  // These are assigned ISO 639-1 codes that the old hard-coded subset omitted,
+  // so every Nordic and Gujarati site got a bogus "rare code" warning.
+  for (const lang of ["nb", "nn", "gu", "mt", "lb", "fo", "gd", "or", "as"]) {
+    const res = validateHreflangCode(lang);
+    assert.equal(res.valid, true, `${lang} must validate`);
+    assert.equal(res.warning, undefined, `${lang} must not warn`);
+  }
+});
+
+test("validateHreflangCode: rejects deprecated language codes with the modern one", () => {
+  const res = validateHreflangCode("iw-IL"); // legacy Hebrew
+  assert.equal(res.valid, false);
+  assert.match(res.reason, /deprecated ISO 639 language code/);
+  assert.equal(res.suggestion, "he-IL");
+});
+
+test("validateHreflangCode: rejects unknown languages instead of warning", () => {
+  const res = validateHreflangCode("qq");
+  assert.equal(res.valid, false);
+  assert.match(res.reason, /not an assigned ISO 639-1 language code/);
+});
+
+test("validateHreflangCode: canonicalizes script subtags to Title case", () => {
+  assert.equal(validateHreflangCode("zh-hans").canonical, "zh-Hans");
+  assert.equal(validateHreflangCode("zh-HANT").canonical, "zh-Hant");
+  assert.equal(validateHreflangCode("zh-hant-tw").canonical, "zh-Hant-TW");
+  assert.equal(validateHreflangCode("sr-latn-rs").canonical, "sr-Latn-RS");
+});
+
+test("validateHreflangCode: rejects unknown script subtags", () => {
+  const res = validateHreflangCode("zh-Qqqq");
+  assert.equal(res.valid, false);
+  assert.match(res.reason, /not an assigned ISO 15924 script subtag/);
+});
+
+// ---------------------------------------------------------------------------
+// Self-referential links and reciprocity.
+//
+// These were coupled: the self-reference test was used as the GUARD around the
+// reciprocity loop, so a page missing its own tag had reciprocity silently
+// switched off. Both defects had to be present for the bug to show, which is
+// why a group with both errors reported "[PASS] fully compliant".
+// ---------------------------------------------------------------------------
+
+test("validateHreflangGroups: flags a page that omits its self-referential link", () => {
+  const groups = normalizeMapping({
+    "https://example.com/en": {
+      es: "https://example.com/es",
+      "x-default": "https://example.com/"
+    }
+  });
+  const res = validateHreflangGroups(groups);
+  assert.equal(res.valid, false);
+  assert.ok(res.issues.some(i => i.type === "missing_self_reference"));
+});
+
+test("validateHreflangGroups: a missing self-reference does not disable reciprocity", () => {
+  // /en omits its own tag AND /es never links back. Both must be reported.
+  const groups = normalizeMapping({
+    "https://example.com/en": {
+      es: "https://example.com/es",
+      "x-default": "https://example.com/"
+    },
+    "https://example.com/es": {
+      es: "https://example.com/es",
+      "x-default": "https://example.com/"
+    }
+  });
+  const res = validateHreflangGroups(groups);
+  assert.equal(res.valid, false);
+  assert.ok(
+    res.issues.some(i => i.type === "missing_self_reference"),
+    "missing self-reference must be reported"
+  );
+  assert.ok(
+    res.issues.some(i => i.type === "missing_reciprocal_link"),
+    "reciprocity must still be checked when the self-reference is absent"
+  );
+});
+
+test("validateHreflangGroups: reports each non-reciprocal pair exactly once", () => {
+  const groups = normalizeMapping({
+    "https://example.com/en": {
+      en: "https://example.com/en",
+      es: "https://example.com/es",
+      "x-default": "https://example.com/"
+    },
+    "https://example.com/es": {
+      es: "https://example.com/es",
+      "x-default": "https://example.com/"
+    }
+  });
+  const res = validateHreflangGroups(groups);
+  const recip = res.issues.filter(i => i.type === "missing_reciprocal_link");
+  assert.equal(recip.length, 1, "one broken pair should produce one error, not one per membership");
+});
+
+test("validateHreflangGroups: a fully correct cluster still passes", () => {
+  const groups = normalizeMapping({
+    "https://example.com/en": {
+      en: "https://example.com/en",
+      "es-MX": "https://example.com/es",
+      "x-default": "https://example.com/"
+    },
+    "https://example.com/es": {
+      en: "https://example.com/en",
+      "es-MX": "https://example.com/es",
+      "x-default": "https://example.com/"
+    }
+  });
+  const res = validateHreflangGroups(groups);
+  assert.equal(res.valid, true, JSON.stringify(res.issues, null, 2));
+});
+
+test("validateHreflangGroups: label-keyed groups are exempt from page-level checks", () => {
+  // "homepage" is not a URL, so it carries no page identity to self-reference.
+  const groups = normalizeMapping({
+    homepage: {
+      en: "https://example.com/en",
+      es: "https://example.com/es",
+      "x-default": "https://example.com/"
+    }
+  });
+  const res = validateHreflangGroups(groups);
+  assert.ok(!res.issues.some(i => i.type === "missing_self_reference"));
+});
