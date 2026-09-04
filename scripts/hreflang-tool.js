@@ -7,12 +7,25 @@
  *
  * Capabilities:
  *   1. Validate hreflang mappings for:
- *      - ISO 639-1 language code syntax and optional ISO 3166-1 alpha-2 country/region syntax.
+ *      - Language subtags checked against the assigned ISO 639-1 set, with
+ *        deprecated codes (iw, in, jw, mo, sh) rejected in favour of the modern one.
+ *      - Script subtags checked against ISO 15924 and canonicalised (zh-hans -> zh-Hans).
+ *      - Region subtags checked against the 249 officially assigned ISO 3166-1
+ *        alpha-2 codes. Withdrawn codes (AN, YU, SU) and never-assigned ones
+ *        (UK, EU, UN) are rejected with the correct code where one exists — en-UK
+ *        is the most common hreflang error in the wild and must not pass.
+ *        UN M.49 numeric areas such as es-419 are accepted.
  *      - Bidirectional reciprocity: If page A lists page B as alternate, page B must list page A.
  *      - Self-referencing link presence: A page must include an alternate link pointing to itself.
+ *        Checked independently of reciprocity — a page missing its own tag is a
+ *        defect in its own right and must not suppress any other check.
  *      - x-default presence: Recommended fallback for unmatched locales.
  *      - Absolute URL enforcement: URLs must be fully-qualified absolute URLs (https://).
  *      - Conflicting canonicals or duplicate hreflang tags.
+ *
+ *   ISO reference tables live in scripts/iso-codes.js. They are generated from
+ *   the runtime's ICU data and re-verified by test/iso-codes.test.js, so the
+ *   plugin needs no ICU at runtime and the tables cannot silently drift.
  *   2. Generate multi-language tags:
  *      - HTML <link rel="alternate" ... /> tags.
  *      - XML sitemap <xhtml:link ... /> entries.
@@ -32,18 +45,29 @@
 const fs = require("fs");
 const path = require("path");
 
-// Valid ISO 639-1 language codes (two letters) + ISO 639-2/3 (three letters) + optional script/region
-const HREFLANG_PATTERN = /^(?:x-default|[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*)$/i;
+const {
+  ASSIGNED_REGIONS,
+  DEPRECATED_REGIONS,
+  RESERVED_REGIONS,
+  TOLERATED_REGIONS,
+  ASSIGNED_LANGS,
+  DEPRECATED_LANGS,
+  SCRIPTS
+} = require("./iso-codes.js");
 
-// Common ISO 639-1 language codes (subset for heuristic checking)
-const COMMON_LANGS = new Set([
-  "af", "am", "ar", "az", "be", "bg", "bn", "bs", "ca", "cs", "cy", "da", "de",
-  "el", "en", "es", "et", "eu", "fa", "fi", "fr", "ga", "gl", "he", "hi", "hr",
-  "hu", "hy", "id", "is", "it", "ja", "ka", "kk", "km", "kn", "ko", "ky", "lt",
-  "lv", "mk", "ml", "mn", "mr", "ms", "my", "ne", "nl", "no", "pa", "pl", "pt",
-  "ro", "ru", "si", "sk", "sl", "sq", "sr", "sv", "sw", "ta", "te", "th", "tl",
-  "tr", "uk", "ur", "uz", "vi", "zh", "zu"
-]);
+// The BCP 47 shape Google accepts for hreflang: language[-Script][-Region].
+//   language = ISO 639-1 (2 alpha) or ISO 639-2/3 (3 alpha)
+//   Script   = ISO 15924 (4 alpha, e.g. Hans)
+//   Region   = ISO 3166-1 alpha-2 (2 alpha) or UN M.49 area (3 digits, e.g. 419)
+// Anything else (private-use subtags, variants, underscores) is not meaningful
+// to hreflang and is rejected rather than silently accepted.
+const HREFLANG_PATTERN =
+  /^(?:x-default|[A-Za-z]{2,3}(?:-[A-Za-z]{4})?(?:-(?:[A-Za-z]{2}|[0-9]{3}))?)$/;
+
+/** Rebuild a canonical tag from its parts, dropping absent components. */
+function composeTag(lang, script, region) {
+  return [lang, script, region].filter(Boolean).join("-");
+}
 
 /**
  * Validate a single hreflang tag string.
@@ -57,24 +81,86 @@ function validateHreflangCode(code) {
     return { valid: true, canonical: "x-default" };
   }
   if (!HREFLANG_PATTERN.test(clean)) {
-    return { valid: false, reason: `Invalid hreflang syntax: '${code}'` };
-  }
-  const parts = clean.split("-");
-  const lang = parts[0].toLowerCase();
-  if (!COMMON_LANGS.has(lang)) {
-    // Non-standard language code warning (might be 3-letter or obscure, allow with warning)
     return {
-      valid: true,
-      canonical: clean,
-      warning: `Unrecognized or rare ISO language code '${lang}' in '${clean}'`
+      valid: false,
+      reason: `Invalid hreflang syntax: '${code}'. Expected language[-Script][-Region], e.g. 'en', 'en-GB', 'zh-Hans', 'zh-Hant-TW', 'es-419'.`
     };
   }
-  // If region is specified (e.g. en-us -> en-US), check casing
-  if (parts.length === 2 && parts[1].length === 2) {
-    const formatted = `${lang}-${parts[1].toUpperCase()}`;
-    return { valid: true, canonical: formatted };
+  // Split into components. A 4-alpha subtag is a script; anything else after
+  // the language is the region (BCP 47 orders them language-Script-Region).
+  const parts = clean.split("-");
+  const lang = parts[0].toLowerCase();
+  let script = null;
+  let region = null;
+  for (const part of parts.slice(1)) {
+    if (part.length === 4) script = part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+    else region = part.toUpperCase();
   }
-  return { valid: true, canonical: clean };
+
+  const notes = [];
+
+  // --- Language: ISO 639-1 (preferred) or ISO 639-2/3 -----------------------
+  if (Object.prototype.hasOwnProperty.call(DEPRECATED_LANGS, lang)) {
+    const modern = DEPRECATED_LANGS[lang];
+    return {
+      valid: false,
+      reason: `'${lang}' is a deprecated ISO 639 language code (in '${clean}'). Use '${modern}' instead.`,
+      suggestion: composeTag(modern, script, region)
+    };
+  }
+  if (lang.length === 3) {
+    notes.push(
+      `'${lang}' is a three-letter ISO 639-2/3 code; Google prefers the two-letter ISO 639-1 code where one exists.`
+    );
+  } else if (!ASSIGNED_LANGS.has(lang)) {
+    return {
+      valid: false,
+      reason: `'${lang}' is not an assigned ISO 639-1 language code (in '${clean}').`
+    };
+  }
+
+  // --- Script: ISO 15924 ----------------------------------------------------
+  if (script && !SCRIPTS.has(script)) {
+    return {
+      valid: false,
+      reason: `'${script}' is not an assigned ISO 15924 script subtag (in '${clean}').`
+    };
+  }
+
+  // --- Region: ISO 3166-1 alpha-2, or UN M.49 numeric area ------------------
+  // Numeric areas such as es-419 (Latin America) are valid and left as-is.
+  if (region && !/^[0-9]{3}$/.test(region)) {
+    if (Object.prototype.hasOwnProperty.call(RESERVED_REGIONS, region)) {
+      const better = RESERVED_REGIONS[region];
+      return {
+        valid: false,
+        reason: better
+          ? `'${region}' is not an officially assigned ISO 3166-1 alpha-2 code (in '${clean}'). Use '${better}'.`
+          : `'${region}' is not a country in ISO 3166-1 alpha-2 (in '${clean}'). hreflang regions must be countries.`,
+        suggestion: better ? composeTag(lang, script, better) : undefined
+      };
+    }
+    if (Object.prototype.hasOwnProperty.call(DEPRECATED_REGIONS, region)) {
+      const successor = DEPRECATED_REGIONS[region];
+      return {
+        valid: false,
+        reason: `'${region}' is a withdrawn ISO 3166-1 code (in '${clean}'). Use '${successor}'.`,
+        suggestion: composeTag(lang, script, successor)
+      };
+    }
+    if (Object.prototype.hasOwnProperty.call(TOLERATED_REGIONS, region)) {
+      notes.push(`'${region}' is ${TOLERATED_REGIONS[region]}; some search engines may ignore it.`);
+    } else if (!ASSIGNED_REGIONS.has(region)) {
+      return {
+        valid: false,
+        reason: `'${region}' is not an assigned ISO 3166-1 alpha-2 region code (in '${clean}').`
+      };
+    }
+  }
+
+  const result = { valid: true, canonical: composeTag(lang, script, region) };
+  if (notes.length) result.warning = notes.join(" ");
+  return result;
 }
 
 /**
@@ -131,7 +217,6 @@ function normalizeMapping(raw) {
 function validateHreflangGroups(groups) {
   const issues = [];
   const warnings = [];
-  const urlToGroup = new Map();
 
   if (groups.length === 0) {
     issues.push({
@@ -210,13 +295,6 @@ function validateHreflangGroups(groups) {
         });
       }
 
-      // Track URL membership for cross-group reciprocity checks
-      if (alt.url) {
-        if (!urlToGroup.has(alt.url)) {
-          urlToGroup.set(alt.url, []);
-        }
-        urlToGroup.get(alt.url).push({ group: groupName, lang: alt.lang, groupRef: group });
-      }
     }
 
     if (!hasXDefault) {
@@ -228,33 +306,43 @@ function validateHreflangGroups(groups) {
     }
   }
 
-  // Reciprocal linkage verification:
-  // If groups are defined per page URL, ensure reciprocity across pages
-  for (const [url, memberships] of urlToGroup.entries()) {
-    for (const mem of memberships) {
-      const groupAlts = mem.groupRef.alternates;
-      // Does this group's alternate list contain a self-reference for the group URL?
-      const isGroupUrl = groupAlts.some(a => a.url === mem.group);
-      if (isGroupUrl) {
-        // Group name is itself an alternate page URL.
-        // Check if other alternate URLs in this group define their own group pointing back.
-        for (const targetAlt of groupAlts) {
-          if (targetAlt.url === mem.group) continue; // self
-          const targetMemberships = urlToGroup.get(targetAlt.url) || [];
-          const targetGroup = targetMemberships.find(m => m.group === targetAlt.url);
-          if (targetGroup) {
-            // Target URL has its own defined alternates. Verify it includes mem.group
-            const reciprocal = targetGroup.groupRef.alternates.some(a => a.url === mem.group);
-            if (!reciprocal) {
-              issues.push({
-                group: mem.group,
-                type: "missing_reciprocal_link",
-                message: `Non-reciprocal hreflang link: Page '${mem.group}' links to '${targetAlt.url}', but '${targetAlt.url}' does not link back to '${mem.group}'. Google will ignore non-reciprocal hreflang tags.`
-              });
-            }
-          }
-        }
-      }
+  // Groups keyed by a page URL describe that page's own alternate cluster, so
+  // they can be checked for self-reference and reciprocity. Groups keyed by a
+  // label ("homepage") carry no page identity and are skipped by both checks.
+  const pageGroups = groups.filter(g => /^https?:\/\//i.test(g.group));
+
+  // Self-referential links. Google requires every page in a cluster to list
+  // itself. Checked independently of reciprocity: a page missing its own tag is
+  // a defect in its own right, and must not suppress the reciprocity pass below.
+  for (const group of pageGroups) {
+    if (!group.alternates.some(a => a.url === group.group)) {
+      issues.push({
+        group: group.group,
+        type: "missing_self_reference",
+        message: `Page '${group.group}' does not list itself as an alternate. Google requires a self-referential hreflang link on every page in the cluster, and ignores clusters that omit it.`
+      });
+    }
+  }
+
+  // Reciprocal linkage. Runs for every page-keyed group regardless of whether
+  // that group's self-referential link is present.
+  const reportedPairs = new Set();
+  for (const group of pageGroups) {
+    for (const alt of group.alternates) {
+      if (!alt.url || alt.url === group.group) continue;
+      // Only pages that declare their own cluster can be held to reciprocity.
+      const target = pageGroups.find(g => g.group === alt.url);
+      if (!target) continue;
+      if (target.alternates.some(a => a.url === group.group)) continue;
+
+      const pair = `${group.group} -> ${alt.url}`;
+      if (reportedPairs.has(pair)) continue;
+      reportedPairs.add(pair);
+      issues.push({
+        group: group.group,
+        type: "missing_reciprocal_link",
+        message: `Non-reciprocal hreflang link: Page '${group.group}' links to '${alt.url}', but '${alt.url}' does not link back to '${group.group}'. Google will ignore non-reciprocal hreflang tags.`
+      });
     }
   }
 

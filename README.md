@@ -1,10 +1,10 @@
 # seo-superpower
 
-![version](https://img.shields.io/badge/version-0.5.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A4FFF) ![skills](https://img.shields.io/badge/skills-18-orange) ![architecture](https://img.shields.io/badge/stdlib-100%25%20zero--deps-brightgreen) ![cost](https://img.shields.io/badge/cost-%240%20marginal-success)
+![version](https://img.shields.io/badge/version-0.5.1-blue) ![license](https://img.shields.io/badge/license-MIT-green) ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A4FFF) ![skills](https://img.shields.io/badge/skills-18-orange) ![architecture](https://img.shields.io/badge/stdlib-100%25%20zero--deps-brightgreen) ![cost](https://img.shields.io/badge/cost-%240%20marginal-success)
 
 **End-to-end SEO + Generative Engine Optimization (GEO) for technical builders. One command. Pure stdlib. $0 marginal cost.**
 
-> **Status:** v0.5.0 — Leveled-up, pure stdlib offline toolchain, dogfooded on [vibecrafting.ai](https://vibecrafting.ai). All 18 skills and deterministic tools tested and active.
+> **Status:** v0.5.1 — Leveled-up, pure stdlib offline toolchain, dogfooded on [vibecrafting.ai](https://vibecrafting.ai). All 18 skills and deterministic tools tested and active.
 >
 > *Part of the [Brokenbranch Lab](https://www.brokenbranch.dev/lab/).*
 
@@ -366,16 +366,24 @@ node scripts/cross-site-compare.js ./site1 ./site2 --json
 
 Automates weekly content decay triage by inspecting Search Console impression trajectories and historical snapshots. Flags pages suffering >20% decay, identifies striking-distance keyword drop-offs, updates state in `.seoconfig.json`, and integrates directly with scheduled GitHub Actions (`.github/workflows/decay-sweep.yml`) and Claude Code event hooks (`hooks/seo-decay-check.json`).
 
-```bash
-# Execute standard automated decay sweep
-node scripts/decay-automation.js
+`--data` is required. The runner has no built-in data source, so a sweep with
+nothing to read exits `2` rather than reporting that your content is healthy —
+"no decay found" must never be reachable from a missing file or a wrong schema.
 
-# Custom decay threshold percentage and custom config path
-node scripts/decay-automation.js --threshold-pct 25 --config ./.seoconfig.json
+```bash
+# Standard sweep. Export GSC impressions to a JSON array of
+# { url, current_impressions, prior_impressions } and pass the path.
+node scripts/decay-automation.js --data ./gsc-impressions.json
+
+# Custom decay threshold percentage
+node scripts/decay-automation.js --data ./gsc-impressions.json --threshold-pct 25
 
 # Dry-run mode (runs full analysis without updating timestamp state)
-node scripts/decay-automation.js --dry-run
+node scripts/decay-automation.js --data ./gsc-impressions.json --dry-run
 ```
+
+Exit codes: `0` no decay, `1` decaying pages found, `2` could not evaluate
+(missing/unreadable data, or no row carried the expected numeric fields).
 
 ---
 
@@ -502,7 +510,7 @@ Documentation:
 Every script, validator, and skill in `seo-superpower` is guarded by comprehensive offline unit tests and static analysis. Tests run in under 5 seconds with zero network calls:
 
 ```bash
-# 1. Run Node.js unit tests (248 tests across all scripts & fixtures)
+# 1. Run Node.js unit tests (293 tests across all scripts & fixtures)
 node --test test/*.test.js
 
 # 2. Run Python unit tests (47 tests across schema & CI validators)
