@@ -11,7 +11,7 @@ Technical SEO is the foundation. Content strategy, keyword work, and link buildi
 
 ## What this skill checks
 
-- **Crawlability:** `robots.txt` parses cleanly and stays under Google's 500 KiB parse cap (bytes past it are ignored) [6]; no accidental site-wide `Disallow: /`; sitemap referenced as an absolute URL, reachable, valid, and within the single-sitemap limits of **50,000 URLs / 50 MB uncompressed** — split into a sitemap index above either [7]. Run `node scripts/baseline-check.js <url>` rather than eyeballing these.
+- **Crawlability:** `robots.txt` parses cleanly and stays under Google's 500 KiB parse cap (bytes past it are ignored) [6]; no accidental site-wide `Disallow: /`; sitemap referenced as an absolute URL, reachable, valid, and within the single-sitemap limits of **50,000 URLs / 50 MB uncompressed** — split into a sitemap index above either [7]. Run `node scripts/baseline-check.js <url>` (or `node scripts/baseline-check.js --dir <path>` for local static builds) rather than eyeballing these.
 - **Indexability:** GSC index coverage cross-referenced via `gsc-mcp`, canonical tags consistent and self-referential where appropriate, hreflang correct on i18n sites, no duplicate content via tracking parameters, no `noindex` on pages that should rank [5].
 - **Rendering:** SSR/SSG vs CSR-only routes (CSR-only pages are largely invisible to GPTBot/ClaudeBot/PerplexityBot, which do not execute JS reliably), critical content not hidden behind hydration [2][3].
 - **Core Web Vitals:** LCP, INP, CLS, TTFB measured at p75 via `lighthouse-mcp` (PageSpeed Insights / CrUX field data) [1].
@@ -38,6 +38,8 @@ When `lighthouse-mcp` and `gsc-mcp` aren't configured (user hasn't run `/seo-set
 **What to do:**
 
 1. **Run `scripts/baseline-check.js`** (`node scripts/baseline-check.js <url>`) — this does the whole static pass deterministically (fetches `/`, `/robots.txt`, and the declared sitemap; parses head tags and JSON-LD; resolves robots.txt groups; scores Pass A out of 10; emits a route). Use `--json` to consume the result. Do **not** hand-tally these checks; the script exists because the tally gates the router.
+   - For pre-deployment or local static build audits, run `scripts/baseline-check.js` with `--dir <path>` (e.g. `node scripts/baseline-check.js --dir <path>`). Add `--strict` to fail with exit code 1 on critical architectural blockers (`canonical`, `aibots`, `robots`, `sitemap`) even if the score is ≥ 8/10.
+   - Run `scripts/seo-lint.js` (`node scripts/seo-lint.js [dir]`) to scan for unreplaced placeholder tokens (`REPLACE-WITH-*`), accidental `noindex` directives in production templates, relative sitemap/canonical URLs, and schema casing errors before committing or opening a PR.
 
    What it checks, for reference:
    - `GET /robots.txt` — 200, non-empty, `Sitemap:` line present, under the 500 KiB parse cap [6], explicit policy on ≥3 AI crawlers.

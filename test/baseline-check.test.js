@@ -19,6 +19,10 @@
 
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const os = require("node:os");
+const { execFileSync } = require("node:child_process");
 
 const {
   parseRobots,
@@ -32,6 +36,8 @@ const {
   scoreBaseline,
   routeFor,
   normalizeUrl,
+  runBaselineDir,
+  CRITICAL_CHECKS,
   SITEMAP_MAX_URLS,
   SITEMAP_MAX_BYTES,
   ROBOTS_MAX_BYTES,
@@ -482,4 +488,152 @@ test("normalizeUrl: preserves an explicit scheme", () => {
 test("normalizeUrl: returns null on unusable input", () => {
   assert.equal(normalizeUrl(""), null);
   assert.equal(normalizeUrl(null), null);
+});
+
+// ---------------------------------------------------------------------------
+// Critical blockers & Strict mode
+// ---------------------------------------------------------------------------
+
+test("scoreBaseline: blockers array identifies critical failures", () => {
+  assert.deepEqual(CRITICAL_CHECKS, ["canonical", "aibots", "robots", "sitemap"]);
+
+  const r = scoreBaseline(
+    healthyInput({
+      head: { canonical: null },
+      robots: { aiBots: { namedCount: 0, named: [] } },
+    }),
+  );
+  assert.equal(r.passed, 8);
+  assert.equal(r.healthy, true);
+  assert.deepEqual(r.blockers, ["canonical", "aibots"]);
+  assert.equal(r.strictPass, false);
+});
+
+test("scoreBaseline: strictPass is true only when score >= 8 and zero blockers", () => {
+  const rClean = scoreBaseline(healthyInput());
+  assert.equal(rClean.healthy, true);
+  assert.equal(rClean.strictPass, true);
+  assert.deepEqual(rClean.blockers, []);
+
+  // Title and description missing (not critical blockers) -> 8/10 -> strictPass is true
+  const rNonBlockers = scoreBaseline(healthyInput({ head: { title: null, description: null } }));
+  assert.equal(rNonBlockers.passed, 8);
+  assert.equal(rNonBlockers.healthy, true);
+  assert.equal(rNonBlockers.strictPass, true);
+  assert.deepEqual(rNonBlockers.blockers, []);
+});
+
+// ---------------------------------------------------------------------------
+// Local directory audit (`runBaselineDir` & `--dir`)
+// ---------------------------------------------------------------------------
+
+function createMockDir(files = {}) {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "baseline-test-"));
+  for (const [rel, content] of Object.entries(files)) {
+    const full = path.join(tmpDir, rel);
+    fs.mkdirSync(path.dirname(full), { recursive: true });
+    fs.writeFileSync(full, content, "utf8");
+  }
+  return tmpDir;
+}
+
+test("runBaselineDir: audits a complete local directory and scores 10/10", () => {
+  const tmpDir = createMockDir({
+    "robots.txt": "User-agent: GPTBot\nAllow: /\nUser-agent: Claude-SearchBot\nAllow: /\nUser-agent: OAI-SearchBot\nAllow: /\nSitemap: https://example.com/sitemap.xml\n",
+    "sitemap.xml": '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://example.com/</loc></url></urlset>',
+    "index.html": `<!doctype html>
+      <html>
+        <head>
+          <title>Test Title That Is Good</title>
+          <meta name="description" content="A great test description for SEO baseline testing.">
+          <link rel="canonical" href="https://example.com/">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <script type="application/ld+json">
+          {"@context": "https://schema.org", "@type": "WebSite", "name": "Test Site", "url": "https://example.com"}
+          </script>
+        </head>
+        <body>
+          <h1>Single H1 Heading</h1>
+        </body>
+      </html>`,
+  });
+
+  try {
+    const r = runBaselineDir(tmpDir);
+    assert.equal(r.isLocalDir, true);
+    assert.equal(r.homeStatus, 200);
+    assert.equal(r.result.passed, 10);
+    assert.equal(r.result.healthy, true);
+    assert.equal(r.result.strictPass, true);
+    assert.equal(r.route.decision, "growth");
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("runBaselineDir: checks public/ fallback directory for static frameworks", () => {
+  const tmpDir = createMockDir({
+    "public/robots.txt": "User-agent: *\nDisallow:\nSitemap: https://example.com/sitemap.xml\n",
+    "public/sitemap.xml": '<urlset><url><loc>https://example.com/</loc></url></urlset>',
+    "index.html": "<html><head><title>Hi</title></head><body><h1>One</h1></body></html>",
+  });
+
+  try {
+    const r = runBaselineDir(tmpDir);
+    assert.equal(r.robots.ok, true);
+    assert.equal(r.sitemap.ok, true);
+    assert.equal(r.head.title, "Hi");
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("runBaselineDir: throws error on missing directory", () => {
+  assert.throws(() => {
+    runBaselineDir("/nonexistent/directory/path/here");
+  }, /directory not found/);
+});
+
+test("CLI --dir and --strict flags via child_process", () => {
+  const scriptPath = path.resolve(__dirname, "../scripts/baseline-check.js");
+
+  const tmpDir = createMockDir({
+    "robots.txt": "User-agent: GPTBot\nAllow: /\nUser-agent: Claude-SearchBot\nAllow: /\nUser-agent: OAI-SearchBot\nAllow: /\nSitemap: https://example.com/sitemap.xml\n",
+    "sitemap.xml": '<urlset><url><loc>https://example.com/</loc></url></urlset>',
+    "index.html": `<!doctype html>
+      <html>
+        <head>
+          <title>Test Title</title>
+          <meta name="description" content="A description">
+          <!-- canonical missing: critical blocker! -->
+          <meta name="viewport" content="width=device-width">
+          <script type="application/ld+json">
+          {"@context": "https://schema.org", "@type": "WebSite", "name": "Test", "url": "https://example.com"}
+          </script>
+        </head>
+        <body>
+          <h1>Heading</h1>
+        </body>
+      </html>`,
+  });
+
+  try {
+    // Normal mode without --strict: score is 9/10 >= 8 -> exits 0
+    const out0 = execFileSync(process.execPath, [scriptPath, "--dir", tmpDir, "--json"], { encoding: "utf8" });
+    const parsed0 = JSON.parse(out0);
+    assert.equal(parsed0.result.healthy, true);
+    assert.equal(parsed0.result.passed, 9);
+    assert.deepEqual(parsed0.result.blockers, ["canonical"]);
+
+    // Strict mode with --strict: blocker present -> exits 1
+    let strictCode = 0;
+    try {
+      execFileSync(process.execPath, [scriptPath, "--dir", tmpDir, "--strict", "--json"], { encoding: "utf8" });
+    } catch (err) {
+      strictCode = err.status;
+    }
+    assert.equal(strictCode, 1);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 });

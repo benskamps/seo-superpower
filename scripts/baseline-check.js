@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 "use strict";
 
+const fs = require("node:fs");
+const path = require("node:path");
+
 /**
  * scripts/baseline-check.js — deterministic Pass A baseline health check.
  *
@@ -77,6 +80,9 @@ const AI_BOT_NAMED_THRESHOLD = 3;
 
 /** Router gate: >= this many of 10 checks means "past bootstrap". */
 const HEALTHY_THRESHOLD = 8;
+
+/** Critical architectural checks for --strict blocker mode. */
+const CRITICAL_CHECKS = ["canonical", "aibots", "robots", "sitemap"];
 
 const DEFAULT_TIMEOUT_MS = 15000;
 const UA = "seo-superpower-baseline-check/1.0 (+https://github.com/benskamps/seo-superpower)";
@@ -408,7 +414,7 @@ function scoreBaseline({ robots, sitemap, head, https }) {
       id: "https",
       label: "HTTPS + valid certificate",
       pass: Boolean(https),
-      detail: https ? "ok" : "fetch over HTTPS failed",
+      detail: https === "local" ? "local directory audit (skipped)" : (https ? "ok" : "fetch over HTTPS failed"),
     },
     {
       id: "h1",
@@ -428,7 +434,15 @@ function scoreBaseline({ robots, sitemap, head, https }) {
   ];
 
   const passed = items.filter((i) => i.pass).length;
-  return { items, passed, total: items.length, healthy: passed >= HEALTHY_THRESHOLD };
+  const blockers = items.filter((i) => CRITICAL_CHECKS.includes(i.id) && !i.pass).map((i) => i.id);
+  return {
+    items,
+    passed,
+    total: items.length,
+    healthy: passed >= HEALTHY_THRESHOLD,
+    blockers,
+    strictPass: passed >= HEALTHY_THRESHOLD && blockers.length === 0,
+  };
 }
 
 function routeFor(result, aiBots) {
@@ -527,21 +541,153 @@ async function runBaseline(rawUrl, { timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
   return { url: origin, homeStatus: homeRes.status, robots, sitemap, head, result, route, aiBots };
 }
 
+function runBaselineDir(rawDir, { strict = false } = {}) {
+  const dirPath = path.resolve(rawDir);
+  if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
+    throw new Error(`directory not found: ${rawDir}`);
+  }
+
+  // 1. robots.txt (check root then public/)
+  const robotsCandidates = [
+    path.join(dirPath, "robots.txt"),
+    path.join(dirPath, "public", "robots.txt"),
+  ];
+  const robotsPath = robotsCandidates.find((p) => fs.existsSync(p) && fs.statSync(p).isFile());
+  let robotsText = "";
+  let robotsBytes = 0;
+  let robotsOk = false;
+  let robotsStatus = 404;
+
+  if (robotsPath) {
+    try {
+      robotsText = fs.readFileSync(robotsPath, "utf8");
+      robotsBytes = Buffer.byteLength(robotsText, "utf8");
+      robotsOk = true;
+      robotsStatus = 200;
+    } catch {
+      robotsStatus = 500;
+    }
+  }
+
+  const robotsParsed = parseRobots(robotsOk ? robotsText : "");
+  const aiBots = analyzeAiBots(robotsParsed.groups);
+
+  // 2. sitemap.xml (check declared filename, root sitemap.xml, then public/)
+  const sitemapCandidates = [];
+  if (robotsParsed.sitemaps.length > 0) {
+    const declared = robotsParsed.sitemaps[0];
+    try {
+      const u = new URL(declared, "http://localhost");
+      const filename = path.basename(u.pathname);
+      if (filename) {
+        sitemapCandidates.push(path.join(dirPath, filename));
+        sitemapCandidates.push(path.join(dirPath, "public", filename));
+      }
+    } catch {}
+  }
+  sitemapCandidates.push(path.join(dirPath, "sitemap.xml"));
+  sitemapCandidates.push(path.join(dirPath, "public", "sitemap.xml"));
+
+  const sitemapPath = sitemapCandidates.find((p) => fs.existsSync(p) && fs.statSync(p).isFile());
+  let sitemapText = "";
+  let sitemapBytes = 0;
+  let sitemapOk = false;
+  let sitemapStatus = 404;
+
+  if (sitemapPath) {
+    try {
+      sitemapText = fs.readFileSync(sitemapPath, "utf8");
+      sitemapBytes = Buffer.byteLength(sitemapText, "utf8");
+      sitemapOk = true;
+      sitemapStatus = 200;
+    } catch {
+      sitemapStatus = 500;
+    }
+  }
+
+  const sitemapParsed = parseSitemap(sitemapOk ? sitemapText : "", sitemapBytes);
+
+  // 3. index.html (root then public/)
+  const htmlCandidates = [
+    path.join(dirPath, "index.html"),
+    path.join(dirPath, "public", "index.html"),
+  ];
+  const htmlPath = htmlCandidates.find((p) => fs.existsSync(p) && fs.statSync(p).isFile());
+  let htmlText = "";
+  let homeStatus = 404;
+
+  if (htmlPath) {
+    try {
+      htmlText = fs.readFileSync(htmlPath, "utf8");
+      homeStatus = 200;
+    } catch {
+      homeStatus = 500;
+    }
+  }
+
+  const head = parseHead(homeStatus === 200 ? htmlText : "");
+
+  const robots = {
+    ok: robotsOk,
+    status: robotsStatus,
+    nonEmpty: robotsOk && robotsText.trim().length > 0,
+    bytes: robotsBytes,
+    overSizeLimit: robotsBytes > ROBOTS_MAX_BYTES,
+    sitemaps: robotsParsed.sitemaps,
+    groups: robotsParsed.groups,
+    aiBots,
+  };
+
+  const sitemap = {
+    ok: sitemapOk,
+    status: sitemapStatus,
+    url: sitemapPath || path.join(dirPath, "sitemap.xml"),
+    ...sitemapParsed,
+  };
+
+  const result = scoreBaseline({ robots, sitemap, head, https: "local" });
+  const route = routeFor(result, aiBots);
+
+  return {
+    url: dirPath,
+    isLocalDir: true,
+    homeStatus,
+    robots,
+    sitemap,
+    head,
+    result,
+    route,
+    aiBots,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Reporting
 // ---------------------------------------------------------------------------
 
-function report(r) {
+function report(r, { strict = false } = {}) {
   const lines = [];
-  lines.push(`Baseline — ${r.url}`);
+  lines.push(`Baseline — ${r.url}${r.isLocalDir ? " [local directory audit]" : ""}`);
   lines.push("");
-  lines.push(`Pass A: ${r.result.passed}/${r.result.total}  ${r.result.healthy ? "HEALTHY" : "INCOMPLETE"}`);
+  const statusLabel = r.result.healthy ? "HEALTHY" : "INCOMPLETE";
+  lines.push(`Pass A: ${r.result.passed}/${r.result.total}  ${statusLabel}`);
+  if (strict) {
+    lines.push(`Strict mode: ${r.result.strictPass ? "PASS (no critical blockers)" : "FAIL (critical blockers present)"}`);
+  }
   lines.push("");
   for (const item of r.result.items) {
     lines.push(`  ${item.pass ? "PASS" : "FAIL"}  ${item.label}`);
     lines.push(`        ${item.detail}`);
   }
   lines.push("");
+
+  if (r.result.blockers && r.result.blockers.length > 0) {
+    lines.push(`Blockers (${r.result.blockers.length} critical check(s) failing):`);
+    for (const b of r.result.blockers) {
+      lines.push(`  ❌ ${b}`);
+    }
+    lines.push("");
+  }
 
   // GEO citation readiness — the part the old prose check could not answer.
   lines.push("AI citation readiness (retrieval bots — these decide if you can be cited):");
@@ -580,30 +726,56 @@ function report(r) {
 async function main(argv) {
   const args = argv.slice(2);
   const json = args.includes("--json");
+  const strict = args.includes("--strict");
   const timeoutArg = args.find((a) => a.startsWith("--timeout="));
   const timeoutMs = timeoutArg ? Number(timeoutArg.split("=")[1]) || DEFAULT_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
-  const target = args.find((a) => !a.startsWith("--"));
+
+  const dirIdx = args.indexOf("--dir");
+  let dirTarget = null;
+  if (dirIdx !== -1 && args[dirIdx + 1] && !args[dirIdx + 1].startsWith("--")) {
+    dirTarget = args[dirIdx + 1];
+  } else {
+    const dirArg = args.find((a) => a.startsWith("--dir="));
+    if (dirArg) dirTarget = dirArg.split("=")[1];
+  }
+
+  const nonFlagArgs = args.filter((a) => !a.startsWith("--") && (dirIdx === -1 || a !== args[dirIdx + 1]));
+  const target = dirTarget || nonFlagArgs[0];
 
   if (!target) {
-    process.stderr.write("usage: node scripts/baseline-check.js <url> [--json] [--timeout=ms]\n");
+    process.stderr.write("usage: node scripts/baseline-check.js <url> [--json] [--strict] [--timeout=ms]\n       node scripts/baseline-check.js --dir <path> [--json] [--strict]\n");
     return 2;
+  }
+
+  let isDir = Boolean(dirTarget);
+  if (!isDir) {
+    try {
+      if (fs.existsSync(target) && fs.statSync(target).isDirectory()) {
+        isDir = true;
+      }
+    } catch {}
   }
 
   let r;
   try {
-    r = await runBaseline(target, { timeoutMs });
+    if (isDir) {
+      r = runBaselineDir(target, { strict });
+    } else {
+      r = await runBaseline(target, { timeoutMs });
+    }
   } catch (err) {
     process.stderr.write(`baseline-check: ${err.message}\n`);
     return 2;
   }
 
-  if (r.homeStatus === null) {
-    process.stderr.write(`baseline-check: could not fetch ${target}\n`);
+  if (r.homeStatus === null || (isDir && r.homeStatus === 404 && !r.robots.ok && !r.sitemap.ok)) {
+    process.stderr.write(`baseline-check: could not find or fetch target ${target}\n`);
     return 2;
   }
 
-  process.stdout.write((json ? JSON.stringify(r, null, 2) : report(r)) + "\n");
-  return r.result.healthy ? 0 : 1;
+  process.stdout.write((json ? JSON.stringify(r, null, 2) : report(r, { strict })) + "\n");
+  const passCondition = strict ? r.result.strictPass : r.result.healthy;
+  return passCondition ? 0 : 1;
 }
 
 if (require.main === module) {
@@ -624,7 +796,9 @@ module.exports = {
   routeFor,
   normalizeUrl,
   runBaseline,
+  runBaselineDir,
   report,
+  CRITICAL_CHECKS,
   SITEMAP_MAX_URLS,
   SITEMAP_MAX_BYTES,
   ROBOTS_MAX_BYTES,
@@ -633,4 +807,5 @@ module.exports = {
   USER_AGENT_BOTS,
   ALL_AI_BOTS,
   HEALTHY_THRESHOLD,
+  main,
 };
