@@ -1,10 +1,10 @@
 # seo-superpower
 
-![version](https://img.shields.io/badge/version-0.4.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A4FFF) ![skills](https://img.shields.io/badge/skills-17-orange) ![architecture](https://img.shields.io/badge/stdlib-100%25%20zero--deps-brightgreen) ![cost](https://img.shields.io/badge/cost-%240%20marginal-success)
+![version](https://img.shields.io/badge/version-0.5.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) ![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-8A4FFF) ![skills](https://img.shields.io/badge/skills-18-orange) ![architecture](https://img.shields.io/badge/stdlib-100%25%20zero--deps-brightgreen) ![cost](https://img.shields.io/badge/cost-%240%20marginal-success)
 
 **End-to-end SEO + Generative Engine Optimization (GEO) for technical builders. One command. Pure stdlib. $0 marginal cost.**
 
-> **Status:** v0.3.0 / v0.4.0 — Leveled-up, pure stdlib offline toolchain, dogfooded on [vibecrafting.ai](https://vibecrafting.ai). All 17 skills and deterministic tools tested and active.
+> **Status:** v0.5.0 — Leveled-up, pure stdlib offline toolchain, dogfooded on [vibecrafting.ai](https://vibecrafting.ai). All 18 skills and deterministic tools tested and active.
 >
 > *Part of the [Brokenbranch Lab](https://www.brokenbranch.dev/lab/).*
 
@@ -61,7 +61,7 @@ To keep the system robust, testable, and maintainable, every capability in `seo-
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    1. SKILLS (The Mind)                     │
-│  17 Markdown playbooks defining expert judgment, lifecycle  │
+│  18 Markdown playbooks defining expert judgment, lifecycle  │
 │  routing, anti-patterns, and step-by-step dev workflows.    │
 └──────────────────────────────┬──────────────────────────────┘
                                │ guides
@@ -100,6 +100,9 @@ To keep the system robust, testable, and maintainable, every capability in `seo-
 │ seo-lint.js             │ Node.js 18+  │ Pre-commit placeholder & SEO bug linter       │
 │ check.py                │ Python 3.10+ │ Cross-platform environment & credential check │
 │ detect-framework.js     │ Node.js 18+  │ App framework & route structure detector      │
+│ hreflang-tool.js        │ Node.js 18+  │ Syntax, reciprocal link & x-default validator │
+│ cross-site-compare.js   │ Node.js 18+  │ Multi-site portfolio audit & compare matrix   │
+│ decay-automation.js     │ Node.js 18+  │ Automated content decay sweep & hook runner   │
 │ codebase-mirror.js      │ Node.js 18+  │ Template & SERP structure competitor diff     │
 │ geo-diff-bot.js         │ Node.js 18+  │ AI citation delta & git commit correlator     │
 │ ci-validate.py          │ Python 3.10+ │ Manifest, frontmatter & dangling link checker │
@@ -311,6 +314,71 @@ System is ready for full SEO Superpower execution!
 
 ---
 
+### 5. Multi-Language & hreflang Validator & Generator (`hreflang-tool.js`)
+
+A pure Node.js stdlib utility for international SEO. Validates BCP 47 language codes (ISO 639-1) and regional subtags (ISO 3166-1 alpha-2), detects self-referential links, enforces `x-default` catch-all targets, verifies bidirectional reciprocal links, and generates framework-ready tags.
+
+```bash
+# Validate alternate links in local HTML file
+node scripts/hreflang-tool.js --validate ./dist/es/index.html
+
+# Verify bidirectional reciprocal links across all language variants
+node scripts/hreflang-tool.js --reciprocal en:https://example.com/ es:https://example.com/es/ de:https://example.com/de/
+
+# Generate HTML alternate tags with x-default
+node scripts/hreflang-tool.js --generate en:https://example.com/ es:https://example.com/es/ --x-default https://example.com/
+
+# Generate Next.js App Router metadata alternates
+node scripts/hreflang-tool.js --generate en:https://example.com/ fr:https://example.com/fr/ --format nextjs
+
+# Machine-readable JSON output
+node scripts/hreflang-tool.js --validate ./dist/index.html --json
+```
+
+#### Exit Codes
+- `0`: Valid hreflang syntax, reciprocal links confirmed, and x-default present.
+- `1`: Validation warnings or reciprocal errors found (missing reciprocal backlink, invalid language code, missing x-default).
+- `2`: Bad arguments or syntax error.
+
+---
+
+### 6. Cross-Site Portfolio Comparison Engine (`cross-site-compare.js`)
+
+Compares multiple web properties or local build directories side-by-side in a single diagnostic matrix. Evaluates tech stack fingerprints, SEO health score, robots.txt status, AI search bot accessibility (`OAI-SearchBot`, `PerplexityBot`), sitemap limits, and structured data schemas.
+
+```bash
+# Compare multiple project build directories
+node scripts/cross-site-compare.js ./apps/marketing/dist ./apps/docs/dist
+
+# Compare baseline audit JSON outputs
+node scripts/cross-site-compare.js ./audit-site-a.json ./audit-site-b.json
+
+# Format as GitHub-flavored Markdown table (ideal for PR summaries and CI)
+node scripts/cross-site-compare.js ./site1 ./site2 --format markdown
+
+# Machine-readable JSON comparison matrix
+node scripts/cross-site-compare.js ./site1 ./site2 --json
+```
+
+---
+
+### 7. Content Decay Sweep Automation (`decay-automation.js`)
+
+Automates weekly content decay triage by inspecting Search Console impression trajectories and historical snapshots. Flags pages suffering >20% decay, identifies striking-distance keyword drop-offs, updates state in `.seoconfig.json`, and integrates directly with scheduled GitHub Actions (`.github/workflows/decay-sweep.yml`) and Claude Code event hooks (`hooks/seo-decay-check.json`).
+
+```bash
+# Execute standard automated decay sweep
+node scripts/decay-automation.js
+
+# Custom decay threshold percentage and custom config path
+node scripts/decay-automation.js --threshold-pct 25 --config ./.seoconfig.json
+
+# Dry-run mode (runs full analysis without updating timestamp state)
+node scripts/decay-automation.js --dry-run
+```
+
+---
+
 ## Commands & User Flow
 
 `seo-superpower` provides two core slash commands in Claude Code:
@@ -325,6 +393,7 @@ Runs the full diagnostic flow, triages site maturity, and routes directly to the
 /seo underserved               # GSC query analysis for high-opportunity striking-distance keywords
 /seo brief "<topic>"           # Generate research-backed brief and open a draft PR (draft: true)
 /seo mirror <url>              # Reverse-engineer competitor templates, schema, and heading models
+/seo hreflang                  # Validate alternate tags, reciprocal links, and x-default targets
 /seo refresh                   # Detect decaying content (>20% loss) and prepare refresh PR
 /seo geo-check                 # Benchmark domain citations across ChatGPT, Claude, Perplexity, Gemini
 /seo geo-diff                  # Diff two citation snapshots and correlate changes to git commits
@@ -357,9 +426,9 @@ node scripts/detect-framework.js . --json   # Machine-readable output
 
 ---
 
-## Shipped Skills (All 17 Skills Included)
+## Shipped Skills (All 18 Skills Included)
 
-The complete suite of 17 skills (1 meta-router + 16 specialized playbooks) is fully implemented and active:
+The complete suite of 18 skills (1 meta-router + 17 specialized playbooks) is fully implemented and active:
 
 | Skill | Lifecycle Phase | Trigger Phrases | Key Deliverable |
 |---|---|---|---|
@@ -371,6 +440,7 @@ The complete suite of 17 skills (1 meta-router + 16 specialized playbooks) is fu
 | **`planning-topic-clusters`** | Initial → Growth | "topic clusters", "pillar page", "content architecture" | Cluster architecture with pillar and supporting post plan |
 | **`optimizing-on-page`** | Cross-cutting | "polish this page", "title and meta", "internal linking" | Exact diff for `<title>`, description, headers, and internal anchors |
 | **`adding-schema-markup`** | Cross-cutting | "add schema", "JSON-LD", "FAQ schema", "rich results" | Rich-result eligible JSON-LD components validated via stdlib tools |
+| **`generating-hreflang`** | Cross-cutting / Initial → Growth | "hreflang", "international SEO", "multilingual", "x-default" | Syntax validation, reciprocal links, and framework-native alternate tags |
 | **`optimizing-for-generative-engines`** | Cross-cutting | "GEO", "ChatGPT citations", "AI Overview", "track AI search" | Quotable answer capsules, citation tables, author entity markup |
 | **`tracking-citation-diffs`** | Cross-cutting / Mature | "citation diff", "did my PR win citations", "GEO diff" | Correlates AI citation movement to specific git commits via `geo-diff-bot.js` |
 | **`analyzing-content-gaps`** | Growth | "why does X outrank us", "content gap", "SERP diff" | Heading, topic, and entity gap analysis against top 3 ranking URLs |
@@ -432,18 +502,18 @@ Documentation:
 Every script, validator, and skill in `seo-superpower` is guarded by comprehensive offline unit tests and static analysis. Tests run in under 5 seconds with zero network calls:
 
 ```bash
-# 1. Run Node.js unit tests (229 tests across all scripts & fixtures)
+# 1. Run Node.js unit tests (248 tests across all scripts & fixtures)
 node --test test/*.test.js
 
 # 2. Run Python unit tests (47 tests across schema & CI validators)
 python -m unittest discover -s test
 
-# 3. Run comprehensive CI integrity validation (88 structural checks)
+# 3. Run comprehensive CI integrity validation (92 structural checks)
 python scripts/ci-validate.py
 ```
 
 ### What `ci-validate.py` Checks:
-1. **Skill Frontmatter:** Validates YAML frontmatter blocks (`name` and `description`) across all 17 skills.
+1. **Skill Frontmatter:** Validates YAML frontmatter blocks (`name` and `description`) across all 18 skills.
 2. **Command Frontmatter:** Validates descriptions on all commands in `commands/`.
 3. **Manifest Integrity:** Validates `.claude-plugin/plugin.json` and `marketplace.json` schema and paths.
 4. **Reference Integrity:** Proves there are zero dangling links:

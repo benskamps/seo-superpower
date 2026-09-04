@@ -1,0 +1,24 @@
+name: Scheduled Decay Sweep
+
+on:
+  schedule:
+    # Runs every Monday at 09:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decay-sweep:
+    name: Run weekly content decay sweep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run decay sweep
+        run: node scripts/decay-automation.js --dry-run

@@ -171,3 +171,61 @@ test("run: directive routes to the refreshing-stale-content skill / sweep", () =
   assert.match(res.stdout, /decay/i);
   assert.match(res.stdout, /gsc-mcp/);
 });
+
+// ---------------------------------------------------------------------------
+// decay-automation.js — automated decay sweep runner & calculation.
+// ---------------------------------------------------------------------------
+
+const { evaluateDecay } = require("../scripts/decay-automation.js");
+const AUTO = path.join(SCRIPTS_DIR, "decay-automation.js");
+
+test("decay-automation: evaluateDecay flags pages with sustained YoY impression drops", () => {
+  const pages = [
+    { url: "https://example.com/blog/decaying", current_impressions: 50, prior_impressions: 100 }, // -50%
+    { url: "https://example.com/blog/stable", current_impressions: 95, prior_impressions: 100 },    // -5%
+    { url: "https://example.com/blog/growing", current_impressions: 150, prior_impressions: 100 }   // +50%
+  ];
+
+  const { decaying, stable } = evaluateDecay(pages, 20);
+  assert.equal(decaying.length, 1);
+  assert.equal(decaying[0].url, "https://example.com/blog/decaying");
+  assert.equal(decaying[0].deltaPct, -50);
+  assert.equal(stable.length, 2);
+});
+
+test("decay-automation: CLI runs cleanly with --dry-run and --json", () => {
+  const dir = makeProjectDir();
+  const res = spawnSync(process.execPath, [AUTO, "--dry-run", "--json"], {
+    cwd: dir,
+    env: { ...process.env, CLAUDE_PROJECT_DIR: dir },
+    encoding: "utf8"
+  });
+  assert.equal(res.status, 0);
+  const parsed = JSON.parse(res.stdout);
+  assert.equal(parsed.status, "HEALTHY");
+  assert.equal(parsed.dryRun, true);
+});
+
+test("decay-automation: CLI flags decaying pages and exits with code 1", () => {
+  const dir = makeProjectDir();
+  const sampleData = path.join(dir, "impressions.json");
+  fs.writeFileSync(
+    sampleData,
+    JSON.stringify([
+      { url: "https://example.com/stale-post", current_impressions: 30, prior_impressions: 100 }
+    ]),
+    "utf8"
+  );
+
+  const res = spawnSync(process.execPath, [AUTO, "--data", sampleData, "--json"], {
+    cwd: dir,
+    env: { ...process.env, CLAUDE_PROJECT_DIR: dir },
+    encoding: "utf8"
+  });
+  assert.equal(res.status, 1);
+  const parsed = JSON.parse(res.stdout);
+  assert.equal(parsed.status, "DECAY_DETECTED");
+  assert.equal(parsed.decayCount, 1);
+  assert.equal(parsed.decayingPages[0].url, "https://example.com/stale-post");
+});
+

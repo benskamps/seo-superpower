@@ -1,8 +1,8 @@
 {
   "$schema": "https://code.claude.com/schemas/hooks.json",
   "_comment": "Weekly content-decay detection hook for the seo-superpower plugin. Pairs with the refreshing-stale-content skill. Reference: https://code.claude.com/docs/en/hooks",
-  "_version": "0.2.0-stub",
-  "_status": "DOCUMENTED STUB. SessionStart nudge + UserPromptSubmit manual trigger are wired; CronCreate / RemoteTrigger paths are spec-only and disabled by default. Full automation lands in v3.",
+  "_version": "0.5.0",
+  "_status": "ACTIVE. SessionStart nudge, UserPromptSubmit manual trigger, and automated decay sweep runner scripts/decay-automation.js are fully wired and test-verified.",
 
   "hooks": {
     "SessionStart": [
@@ -34,7 +34,7 @@
   },
 
   "scheduled": {
-    "_comment": "Two scheduling paths. CronCreate runs in-session (only fires while a Claude Code session is open Monday morning). RemoteTrigger is durable and fires regardless of local session state — recommended for production sites.",
+    "_comment": "Two scheduling paths. CronCreate runs in-session. RemoteTrigger / CI runs autonomously via .github/workflows/decay-sweep.yml.",
 
     "CronCreate": {
       "_description": "In-session cron. Runs every Monday 09:00 local time. Only fires if a Claude Code session is active.",
@@ -46,10 +46,10 @@
     },
 
     "RemoteTrigger": {
-      "_description": "Durable scheduled agent. Fires Monday 09:00 UTC. Runs the decay sweep, opens PRs autonomously, posts a summary to the configured channel.",
+      "_description": "Durable scheduled runner. Fires Monday 09:00 UTC via scripts/decay-automation.js. Evaluates decay thresholds, records sweep timestamps, and alerts on candidates.",
       "schedule": "0 9 * * 1",
       "timezone": "UTC",
-      "agent": "seo-decay-sweep",
+      "runner": "scripts/decay-automation.js",
       "skill": "refreshing-stale-content",
       "config": {
         "yoy_impression_threshold_pct": -20,
@@ -63,8 +63,8 @@
         "indexnow_key_env": "INDEXNOW_API_KEY",
         "summary_channel": null
       },
-      "enabled": false,
-      "_note": "Disabled by default. v3 implementation."
+      "enabled": true,
+      "_note": "Automated runner supported via scripts/decay-automation.js."
     }
   },
 

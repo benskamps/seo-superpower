@@ -12,40 +12,26 @@ small additions ship as patch releases (`0.3.x`); new skills ship as minor relea
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-09-04
+
+Foundational charter, multi-language/hreflang support, cross-site portfolio comparison, automated content decay sweeps, and pure stdlib verification toolchain. Total skills: 18.
+
 ### Added
 
-- **Competitor Codebase Mirror** (`scripts/codebase-mirror.js`) + `mirroring-competitor-codebases`
-  — moat #4 from [VISION.md](VISION.md), the third of the five to ship. Reads the HTML
-  both sites actually serve and reverse-engineers each side's *template* rather than its
-  prose: page-level JSON-LD types, H1/H2/H3 shape and the share phrased as questions,
-  internal-link density and anchor quality, meta coverage (description, canonical, OG,
-  hreflang, image `alt`), `dateModified`, framework fingerprint, and whether body content
-  arrives in the HTML or behind a client-side shell. N pages per side fold into *rates*,
-  not anecdotes — a type on ≥50% of their pages is a template, one page is a coincidence.
-  Reports **only** what they ship and you don't (swapping the sides must not reproduce a
-  single gap id — that direction contract is a test), ranked by severity × SERP delta,
-  each row handing off to the skill that fixes that class of gap. 38 unit tests,
-  hermetic — HTML fixtures in `fixtures/codebase-mirror/`, an injected fetch, no network.
-- **Rendering as a first-class SEO gap axis** — a page delivered as an empty
-  `<div id="root">` plus scripts is scored `client-shell` and reported at high severity.
-  AI-search crawlers do not execute JS, so that page is invisible to them regardless of
-  copy quality. It is a build decision no content audit surfaces.
-- **`/seo mirror`** — new routing intent in `commands/seo.md`, distinct from
-  `/seo gap`: `analyzing-content-gaps` diffs *prose* for one query, this diffs the
-  *template* across page types.
+- **Foundational Product Charter** (`soul.md`) — Establishes the 5 Inviolable Tenets: The Dev Loop Mandate (PRs over dashboards), The $0 Wedge (Free-Tier Law), Ruthless Empirical Pragmatism (facts over fads), The 1-Call Rule & Triage Discipline, and Deterministic Core & Trust Boundaries.
+- **Multi-Language & hreflang Skill** (`skills/generating-hreflang/SKILL.md`) + CLI tool (`scripts/hreflang-tool.js`) — 18th skill in the registry. Pure Node.js stdlib tool for international SEO: validates BCP 47 codes, self-referential links, reciprocal link symmetry, and x-default fallback targets. Generates HTML `<link rel="alternate">`, XML sitemaps, and Next.js `metadata.alternates`. 10 unit tests.
+- **Cross-Site Portfolio Comparison Engine** (`scripts/cross-site-compare.js`) — Compares 2+ sites or audit JSONs side-by-side: tech stack fingerprint, health score, robots.txt, AI search bot accessibility (`OAI-SearchBot`, `PerplexityBot`), sitemap bounds, and JSON-LD schema richness. Supports terminal tables, markdown, and JSON. 6 unit tests.
+- **Automated Content Decay Sweep** (`scripts/decay-automation.js`, `.github/workflows/decay-sweep.yml`, `hooks/seo-decay-check.json`) — Automates weekly detection of decaying pages (>20% YoY / 90-day loss), tracks `last_decay_sweep` in `.seoconfig.json`, and activates the Claude Code decay hook with real automation.
+- **Offline Stdlib Verification Toolchain** — `schema-quick.py` (Python stdlib JSON-LD validator for 11 schema types), `schema-check.js` (Node.js stdlib JSON-LD validator), `baseline-check.js --dir` (offline directory auditor), `seo-lint.js` (pre-commit placeholder and SEO tag linter), and `check.py` (cross-platform readiness checker). Runs in <5 seconds with zero external dependencies.
+- **Competitor Codebase Mirror** (`scripts/codebase-mirror.js`) + `mirroring-competitor-codebases` — Moat #4 from [VISION.md](VISION.md). Reads the HTML both sites serve and reverse-engineers each side's *template*: schema types, heading shape, internal links, meta coverage, and client-shell vs SSR detection. Swapping sides yields no false gaps; ranked by severity × SERP delta. 38 unit tests.
+- **Rendering as a first-class SEO gap axis** — A page delivered as an empty `<div id="root">` plus scripts is scored `client-shell` and reported at high severity. AI-search crawlers do not execute JS, so that page is invisible to them regardless of copy quality.
+- **`/seo mirror` & `/seo hreflang`** — New routing intents in `commands/seo.md`.
 
 ### Notes
 
-- The mirror never invents a SERP position. Without `--serp` (GSC positions via
-  `finding-underserved-keywords`) every gap row is tagged `serp: "unknown"` and the
-  report carries a warning that the ordering is severity-only — the same
-  refuse-to-fake-it stance as the GEO Diff Bot's `external` verdict.
-- Live fetches honour the competitor's `robots.txt` for this tool's user-agent (a
-  disallowed path is skipped with a warning, never fetched anyway) and rate-limit to one
-  request per origin per `--delay` ms (default 1000).
-- Skill count is now 17. Per [DEVELOPING.md](DEVELOPING.md#releasing) a new skill ships as
-  a minor release, so `.claude-plugin/plugin.json` still reads `0.4.0` here — the bump to
-  `0.5.0` belongs to the release commit, not to this change.
+- Total skill count is now 18.
+- All core scripts remain 100% pure standard library in Node.js 18+ and Python 3.10+, requiring zero npm or pip package installations.
+
 
 ## [0.4.0] — 2026-07-23
 

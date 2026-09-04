@@ -28,6 +28,8 @@
 
 
 **v0.4.0 minor (2026-07-23)** — second dogfood pass, four production sites (`DOGFOOD-2026-07-23.md`). Shipped: `scripts/baseline-check.js` — Pass A is now a deterministic script rather than a prose tally gating the router; real robots.txt group resolution, route carried in the exit code, 54 unit tests. `OAI-SearchBot` added across template and skills — it governs ChatGPT Search citation and was absent repo-wide, the load-bearing omission for a GEO plugin. `templates/robots-ai-bots.txt` regrouped by crawler job (retrieval / user / training). Corrected the sitemap size limit (50,000 URLs / 50 MB; 500 KiB is the robots.txt cap). `psi-quick.py` now accepts `PAGESPEED_API_KEY` as well as `PSI_API_KEY`. Skill count 16; prior releases' brief-to-PR flow and GEO Diff Bot refiled from Fixed to Added in the changelog.
+
+**v0.5.0 (2026-09-04)** — foundational charter (`soul.md`), multi-language / `hreflang` skill and generator (`skills/generating-hreflang/SKILL.md`, `scripts/hreflang-tool.js`), cross-site portfolio comparison engine (`scripts/cross-site-compare.js`), automated weekly content decay sweep (`scripts/decay-automation.js`, `.github/workflows/decay-sweep.yml`, active `hooks/seo-decay-check.json`), and offline stdlib verification toolchain (`schema-quick.py`, `schema-check.js`, `baseline-check.js --dir`, `seo-lint.js`). Total skills: 18.
 ## v1 — shipped
 
 - Plugin scaffold (`.claude-plugin/plugin.json`, `marketplace.json`)
@@ -60,12 +62,17 @@
 - ✅ `researching-keywords-pre-launch` — cold-start keyword discovery (5 free signals)
 - ✅ `schema-validate` MCP — offline JSON-LD validation against schema.org via pyld + extruct, with Google rich-result eligibility checks for 9 types
 
-## What's beyond v3 (future)
+## v4 & Beyond — SHIPPED in v0.5.0 ✅
 
-- Cross-site comparison (multi-site portfolios)
+- ✅ Cross-site comparison (multi-site portfolios) — `scripts/cross-site-compare.js`
+- ✅ Multi-language / hreflang skill — `skills/generating-hreflang/SKILL.md` + `scripts/hreflang-tool.js`
+- ✅ Automated weekly content decay sweep — `scripts/decay-automation.js`, `.github/workflows/decay-sweep.yml`, active `hooks/seo-decay-check.json`
+- ✅ Offline stdlib verification toolchain ($0 marginal cost, pure Node/Python stdlib) — `schema-quick.py`, `schema-check.js`, `baseline-check.js --dir`, `seo-lint.js`
+
+## Future Horizons
+
 - Markdown PDF reports via the `make-pdf` skill
-- Activate the `seo-decay-check` hook with real automation (CronCreate / RemoteTrigger paths)
-- Multi-language / hreflang skill
+- Automated translation pipeline integration for multilingual SEO
 
 ## The 5 killer features (the moat)
 
