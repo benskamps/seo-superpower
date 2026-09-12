@@ -1,24 +1,84 @@
-name: Scheduled Decay Sweep
+name: Content Decay Sweep
+
+# The runner has no built-in data source. This workflow previously ran
+#   node scripts/decay-automation.js --dry-run
+# with no --data, which printed "[PASS] No decaying pages detected" on zero rows
+# and exited 0 every Monday — a green check that proved nothing and could not
+# have gone red if the runner were completely broken.
+#
+# It is now two jobs with different jobs to do:
+#   1. runner-self-test — asserts the runner still detects decay, still passes
+#      clean data, and still refuses to evaluate nothing. Green only when all
+#      three hold, so it goes red the moment the runner regresses.
+#   2. live-sweep — the actual audit. Runs only when a real data export exists.
+#      When it is not wired it says so loudly instead of reporting health.
 
 on:
   schedule:
-    # Runs every Monday at 09:00 UTC
-    - cron: '0 9 * * 1'
+    # Every Monday at 09:00 UTC
+    - cron: "0 9 * * 1"
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/decay-automation.js"
+      - "fixtures/decay/**"
+      - ".github/workflows/decay-sweep.yml"
 
 permissions:
   contents: read
 
+env:
+  # Point this at a committed or generated GSC impressions export to enable the
+  # live sweep. Expected shape:
+  #   [ { "url": "...", "current_impressions": 30, "prior_impressions": 100 } ]
+  DECAY_DATA_PATH: ""
+
 jobs:
-  decay-sweep:
-    name: Run weekly content decay sweep
+  runner-self-test:
+    name: Verify the decay runner still works
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
 
-      - name: Run decay sweep
-        run: node scripts/decay-automation.js --dry-run
+      - name: Detects a decaying page (expect exit 1)
+        run: |
+          node scripts/decay-automation.js --dry-run \
+            --data fixtures/decay/decaying-impressions.json && code=0 || code=$?
+          if [ "$code" != "1" ]; then
+            echo "::error::decay runner did not flag a -92% page (exit $code, expected 1)"
+            exit 1
+          fi
+
+      - name: Passes clean data (expect exit 0)
+        run: |
+          node scripts/decay-automation.js --dry-run \
+            --data fixtures/decay/stable-impressions.json
+
+      - name: Refuses to report health with no data source (expect exit 2)
+        run: |
+          node scripts/decay-automation.js --dry-run && code=0 || code=$?
+          if [ "$code" != "2" ]; then
+            echo "::error::runner reported a verdict with no data source (exit $code, expected 2)"
+            exit 1
+          fi
+
+  live-sweep:
+    name: Sweep real site data
+    needs: runner-self-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run sweep against live export
+        run: |
+          if [ -z "${DECAY_DATA_PATH}" ] || [ ! -f "${DECAY_DATA_PATH}" ]; then
+            echo "::warning::Live decay sweep is NOT wired. Set DECAY_DATA_PATH to a GSC impressions export to enable it. No content-health claim is being made by this run."
+            exit 0
+          fi
+          node scripts/decay-automation.js --data "${DECAY_DATA_PATH}"

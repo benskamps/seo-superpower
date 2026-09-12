@@ -193,17 +193,127 @@ test("decay-automation: evaluateDecay flags pages with sustained YoY impression 
   assert.equal(stable.length, 2);
 });
 
-test("decay-automation: CLI runs cleanly with --dry-run and --json", () => {
-  const dir = makeProjectDir();
-  const res = spawnSync(process.execPath, [AUTO, "--dry-run", "--json"], {
+// Helper: run the automation runner inside a throwaway project dir.
+function runAuto(dir, args) {
+  return spawnSync(process.execPath, [AUTO, ...args], {
     cwd: dir,
     env: { ...process.env, CLAUDE_PROJECT_DIR: dir },
     encoding: "utf8"
   });
+}
+
+// Helper: write a data file and return its path.
+function writeData(dir, name, rows) {
+  const p = path.join(dir, name);
+  fs.writeFileSync(p, JSON.stringify(rows), "utf8");
+  return p;
+}
+
+test("decay-automation: CLI runs cleanly with --dry-run and --json on healthy data", () => {
+  const dir = makeProjectDir();
+  const data = writeData(dir, "healthy.json", [
+    { url: "https://example.com/fine", current_impressions: 98, prior_impressions: 100 }
+  ]);
+
+  const res = runAuto(dir, ["--dry-run", "--json", "--data", data]);
   assert.equal(res.status, 0);
   const parsed = JSON.parse(res.stdout);
   assert.equal(parsed.status, "HEALTHY");
   assert.equal(parsed.dryRun, true);
+  assert.equal(parsed.totalEvaluated, 1);
+  assert.equal(parsed.skippedCount, 0);
+});
+
+// Regression guard. Each of these three inputs used to print
+// "[PASS] No decaying pages detected. All content is performing within normal
+// bounds." and exit 0 — a verdict of "healthy" reached without reading a single
+// row. The scheduled workflow ran the first of them weekly. A sweep that cannot
+// evaluate must exit 2, never 0.
+test("decay-automation: refuses to report health with no data source", () => {
+  const dir = makeProjectDir();
+  const res = runAuto(dir, ["--dry-run", "--json"]);
+  assert.equal(res.status, 2);
+  assert.match(res.stderr, /no data source configured/i);
+  assert.doesNotMatch(res.stdout, /\[PASS\]/);
+});
+
+test("decay-automation: refuses to report health when the data file is missing", () => {
+  const dir = makeProjectDir();
+  const res = runAuto(dir, ["--dry-run", "--data", path.join(dir, "nope.json")]);
+  assert.equal(res.status, 2);
+  assert.match(res.stderr, /data file not found/i);
+  assert.doesNotMatch(res.stdout, /\[PASS\]/);
+});
+
+test("decay-automation: refuses to report health when no row matches the schema", () => {
+  const dir = makeProjectDir();
+  // Correct-looking JSON, wrong field names — the exact typo that used to read
+  // as a clean bill of health.
+  const data = writeData(dir, "wrong-schema.json", [
+    { url: "https://example.com/a", impressions_current: 100, impressions_prior: 1000 }
+  ]);
+
+  const res = runAuto(dir, ["--dry-run", "--data", data]);
+  assert.equal(res.status, 2);
+  assert.match(res.stderr, /none of the 1 row\(s\)/i);
+  assert.doesNotMatch(res.stdout, /\[PASS\]/);
+});
+
+test("decay-automation: rejects a data file that is not a JSON array", () => {
+  const dir = makeProjectDir();
+  const p = path.join(dir, "object.json");
+  fs.writeFileSync(p, JSON.stringify({ url: "https://example.com/a" }), "utf8");
+
+  const res = runAuto(dir, ["--dry-run", "--data", p]);
+  assert.equal(res.status, 2);
+  assert.match(res.stderr, /must contain a JSON array/i);
+});
+
+test("decay-automation: evaluates good rows and reports partially skipped ones", () => {
+  const dir = makeProjectDir();
+  const data = writeData(dir, "mixed.json", [
+    { url: "https://example.com/good", current_impressions: 10, prior_impressions: 100 },
+    { url: "https://example.com/bad", impressions_current: 10 }
+  ]);
+
+  const res = runAuto(dir, ["--dry-run", "--json", "--data", data]);
+  assert.equal(res.status, 1);
+  const parsed = JSON.parse(res.stdout);
+  assert.equal(parsed.totalRows, 2);
+  assert.equal(parsed.totalEvaluated, 1);
+  assert.equal(parsed.skippedCount, 1);
+  assert.deepEqual(parsed.skippedUrls, ["https://example.com/bad"]);
+});
+
+test("decay-automation: evaluateDecay reports unusable rows as skipped", () => {
+  const { decaying, stable, skipped } = evaluateDecay(
+    [
+      { url: "https://example.com/a", current_impressions: 10, prior_impressions: 100 },
+      { url: "https://example.com/b", current_impressions: "oops", prior_impressions: 100 },
+      { url: "https://example.com/c" }
+    ],
+    20
+  );
+  assert.equal(decaying.length, 1);
+  assert.equal(stable.length, 0);
+  assert.deepEqual(skipped, ["https://example.com/b", "https://example.com/c"]);
+});
+
+// The scheduled workflow's self-test asserts these exact exit codes. If the
+// fixtures or the runner drift, CI must fail rather than quietly go green.
+test("decay-automation: committed workflow fixtures produce the asserted exit codes", () => {
+  const repoRoot = path.resolve(__dirname, "..");
+  const decaying = path.join(repoRoot, "fixtures/decay/decaying-impressions.json");
+  const stable = path.join(repoRoot, "fixtures/decay/stable-impressions.json");
+
+  assert.ok(fs.existsSync(decaying), "decaying fixture must exist for the CI self-test");
+  assert.ok(fs.existsSync(stable), "stable fixture must exist for the CI self-test");
+
+  const bad = runAuto(repoRoot, ["--dry-run", "--data", decaying]);
+  assert.equal(bad.status, 1, "decaying fixture must exit 1");
+
+  const good = runAuto(repoRoot, ["--dry-run", "--data", stable]);
+  assert.equal(good.status, 0, "stable fixture must exit 0");
 });
 
 test("decay-automation: CLI flags decaying pages and exits with code 1", () => {

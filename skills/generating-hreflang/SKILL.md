@@ -145,10 +145,37 @@ const { currentLocale } = Astro;
 
 ---
 
+## What `scripts/hreflang-tool.js validate` actually enforces
+
+Every row below is a hard error (exit 1), not a warning. The point of the tool is
+that a `[PASS]` means Google will honour the cluster — so anything Google would
+silently ignore has to fail here.
+
+| Check | Rejects | Suggests |
+|---|---|---|
+| Language subtag | Unassigned (`qq`) and deprecated (`iw`, `in`, `jw`, `mo`, `sh`) ISO 639-1 codes | `iw-IL` → `he-IL` |
+| Script subtag | Non-ISO 15924 (`Qqqq`); canonicalises case | `zh-hans` → `zh-Hans` |
+| Region subtag | Unassigned (`XX`), reserved (`UK`, `EU`, `UN`), withdrawn (`AN`, `YU`, `SU`) | `en-UK` → `en-GB` |
+| Self-referential link | A page-keyed cluster that omits its own URL | — |
+| Reciprocity | A → B where B declares a cluster and omits A | — |
+| Duplicates | The same hreflang value pointing at two URLs | — |
+| URL form | Relative or non-HTTP(S) alternates | — |
+
+Accepted deliberately: UN M.49 numeric areas (`es-419`), three-letter ISO 639-2/3
+codes (with a warning to prefer the two-letter form), and the user-assigned `XK`
+for Kosovo (with a warning — it is not ISO-official but has no alternative).
+
+The ISO tables in `scripts/iso-codes.js` are generated from ICU rather than typed
+by hand, and `test/iso-codes.test.js` re-derives them on every run so they cannot
+drift unnoticed.
+
+---
+
 ## Common Mistakes & Anti-Patterns
 
 - **Using underscores (`en_US`):** Invalid. Hreflang strictly mandates hyphens (`en-US`).
 - **Targeting language with a country code alone (`hreflang="uk"`):** `uk` is the Ukrainian language code, NOT the United Kingdom country code. For UK English, use `en-GB`.
+- **Writing `en-UK` for the United Kingdom:** The region subtag must be an *officially assigned* ISO 3166-1 alpha-2 code. `UK` is reserved, never assigned — the country is `GB`. This is the single most common hreflang error in the wild, and it fails silently: Google simply ignores the tag. Same trap for withdrawn codes (`AN`, `YU`, `SU`) and for non-countries (`EU`, `UN`).
 - **Missing reciprocal links:** Forgetting to update older localized versions when launching a new language (e.g. adding French without updating English and Spanish to point to French).
 - **Pointing hreflang to redirected URLs (301/302):** Alternate links must target the 200 OK canonical URL directly.
 - **Translating URLs without translating content:** Creating shallow language shells that share 90% identical English copy results in soft 404 or duplicate content penalties.

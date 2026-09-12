@@ -12,6 +12,38 @@ small additions ship as patch releases (`0.3.x`); new skills ship as minor relea
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-09-04
+
+Correctness pass on the v0.5.0 toolchain. Four defects where a tool reported a
+confident `[PASS]` on input it had not actually checked. Total skills: 18.
+
+### Fixed
+
+- **hreflang: a missing self-referential link silently disabled the reciprocity check** (`scripts/hreflang-tool.js`) — The self-reference test was used as the *guard* around the reciprocity loop rather than as an assertion of its own, so a cluster with both defects reported `[PASS] All hreflang links are fully compliant, reciprocal, and syntax-valid`. Both checks are now independent, and a missing self-reference is reported as `missing_self_reference`.
+- **hreflang: region subtags were never validated** (`scripts/hreflang-tool.js`, `scripts/iso-codes.js`) — Only the language half of a tag was checked; the region half was uppercased and accepted unread, so `en-UK`, `en-XX` and `en-ZZ` all passed clean. Regions are now checked against the 249 officially assigned ISO 3166-1 alpha-2 codes, with withdrawn (`AN`, `YU`, `SU`) and never-assigned (`UK`, `EU`, `UN`) codes rejected and the correct code suggested — `en-UK` → `en-GB`. UN M.49 numeric areas (`es-419`) remain valid.
+- **decay sweep: every failure mode was indistinguishable from "healthy"** (`scripts/decay-automation.js`, `.github/workflows/decay-sweep.yml`) — No data source, a missing data file, and a data file whose rows carried the wrong field names all printed `[PASS] No decaying pages detected. All content is performing within normal bounds.` and exited 0. The scheduled workflow ran the first of those weekly, so the cron could not have gone red if the runner were completely broken. `--data` is now required, all three cases exit 2 with an actionable message, and partially-unreadable inputs report a skip count instead of quietly dropping rows.
+- **hreflang: one broken reciprocal pair emitted one error per group membership** — a single non-reciprocal link produced three identical error lines. Each pair is now reported once.
+- **cross-site-compare: the AI-crawler check reported correctly-configured sites as Blocked** (`scripts/cross-site-compare.js`) — bot access was matched with `User-agent:\s*<bot>[\s\S]*?Disallow:\s*(.*)`, which searches forward across group boundaries for the next `Disallow:` anywhere in the file. On a robots.txt that explicitly allows the AI crawlers and then disallows one unrelated scraper, that unrelated `Disallow: /` was attributed to every allowed bot above it. `brokenbranch.dev` — which allows `OAI-SearchBot` and `PerplexityBot` by name — was reported as blocking both. robots.txt is now parsed into real rule groups, with longest-match precedence and Allow winning ties.
+- **cross-site-compare: route-generated `robots.txt` was reported as missing** (`scripts/cross-site-compare.js`) — a Next.js app generating robots from `app/robots.ts` has no static file but does have a robots.txt. The dynamic *sitemap* equivalent was already handled; robots was not. Now detected, and since the emitted rules are only knowable from the deployed response, AI-bot access reports `Unknown (dynamic)` rather than guessing.
+- **cross-site-compare: `src/app/sitemap.ts` was not recognised** — only the `app/` variant was checked, so every src-layout project was reported as having no sitemap.
+- **cross-site-compare: JSON-LD in self-closing JSX script tags was invisible** — the extractor required a closing `</script>`, but React sources overwhelmingly emit `<script type="application/ld+json" dangerouslySetInnerHTML={…} />`. `road-trip/web` carries 25 such files and was reported as `Schema.org: Missing`.
+- **cross-site-compare: HTML scanning sampled only 5 files at depth ≤3** — concluding "no schema, no canonical" from five arbitrary files is a coin flip on any real app, and the health score deducted points for it. Raised to 400 files at depth 8 with a wider skip list; an 11-site portfolio sweep still completes in ~0.2s. Real-world effect of these four fixes together: `woodwright` 25 → 100, `visualinventory.ai` 15 → 90, `thelongway.ai` 35 → 75.
+- **cross-site-compare: framework detection never worked** (`scripts/cross-site-compare.js`) — the module imported `detectFramework`, a name `detect-framework.js` does not export, and read a nested `fw.framework.label` that does not exist. Every lookup threw `TypeError`, the surrounding `catch` swallowed it, and every site in every comparison reported `Unknown` — which also silently cost each site the 15-point framework bonus in its health score. Now calls `detectProject` and reads the documented shape.
+
+### Added
+
+- **`scripts/iso-codes.js`** — Generated ISO reference tables: 249 assigned ISO 3166-1 alpha-2 regions, 183 assigned ISO 639-1 languages, 203 ISO 15924 script subtags, plus deprecated/reserved classifications with successor codes. Derived from the runtime's bundled ICU/CLDR data rather than transcribed by hand; the plugin needs no ICU at runtime.
+- **`test/iso-codes.test.js`** — Re-derives the tables from ICU on every run and fails if the committed file drifts, so the tables are a re-runnable claim rather than an assertion. Skips cleanly on a reduced-ICU Node.
+- **Script subtag support** — `zh-Hans`, `zh-Hant-TW`, `sr-Latn-RS` are validated against ISO 15924 and canonicalised (`zh-hans` → `zh-Hans`). Previously the tag was returned uncanonicalised.
+- **Full ISO 639-1 language coverage** — the old hard-coded 71-code subset raised a bogus "rare code" warning for assigned languages including `nb`, `nn`, `gu`, `mt`, `lb`, `fo`, `gd`, `or` and `as`. Deprecated codes (`iw`, `in`, `jw`, `mo`, `sh`) are now rejected with the modern equivalent.
+- **`fixtures/decay/`** — Committed decaying and stable impression fixtures backing the workflow self-test.
+- **Decay sweep CI self-test** — `.github/workflows/decay-sweep.yml` now asserts that the runner detects a decaying page (exit 1), passes clean data (exit 0), and refuses to report health with no data source (exit 2). The live sweep runs only when a real export is wired, and says so loudly when it is not.
+- **45 regression tests** (248 → 293 Node tests) covering every case above, including the three decay inputs that previously read as healthy.
+
+### Changed
+
+- `skills/generating-hreflang/SKILL.md` — documents exactly what the validator enforces, and adds `en-UK` to the anti-patterns list.
+
 ## [0.5.0] — 2026-09-04
 
 Foundational charter, multi-language/hreflang support, cross-site portfolio comparison, automated content decay sweeps, and pure stdlib verification toolchain. Total skills: 18.
